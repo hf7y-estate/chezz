@@ -412,13 +412,13 @@
      below the board, are not drag-drift targets, and hold the text a
      player actually wants to copy (a rank/share link, a leaderboard name,
      what shipped), so selection comes back on for them specifically. */
-  #instructions, #leaderboard, #featureChat, #changelog, #sweepStatus, #appVersion {
+  #instructions, #settings, #leaderboard, #featureChat, #changelog, #sweepStatus, #appVersion {
     user-select: text;
     -webkit-user-select: text;
     -webkit-touch-callout: default;
   }
 
-  #instructions, #leaderboard, #featureChat, #changelog {
+  #instructions, #settings, #leaderboard, #featureChat, #changelog {
     max-width: 380px;
     width: 280px;
     margin: 14px 0 0;
@@ -429,8 +429,9 @@
     box-shadow: 0 4px 0 var(--ink);
   }
 
-  #instructions { font-size: 14px; }
-  #instructions summary, #featureChat summary, #changelog summary {
+  #instructions, #settings { font-size: 14px; }
+  #settings fieldset { border: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  #instructions summary, #settings summary, #featureChat summary, #changelog summary {
     cursor: pointer;
     font-family: "Press Start 2P", system-ui, sans-serif;
     font-size: 10px;
@@ -536,6 +537,16 @@
   </p>
 </details>
 
+<details id="settings">
+  <summary>&#x2699;&#xFE0F; Settings</summary>
+  <fieldset id="loneKingRule">
+    <legend>Lone King at a boss gate</legend>
+    <label class="chatKindLabel"><input type="radio" name="loneKing" value="fifty" checked> Fifty-move draw</label>
+    <label class="chatKindLabel"><input type="radio" name="loneKing" value="draw"> Instant draw</label>
+    <label class="chatKindLabel"><input type="radio" name="loneKing" value="reinforce"> Reinforcements</label>
+  </fieldset>
+</details>
+
 <dl id="leaderboard">
   <dt>Your best</dt>
   <dd><data id="leaderboardMine"></data></dd>
@@ -568,7 +579,7 @@
   // updateUrl) so a bug report's link shows which build it was filed
   // against, and displayed in the footer for a quick eyeball diff between
   // deployments without needing devtools.
-  const APP_VERSION = "2026-08-06.2";
+  const APP_VERSION = "2026-10-01.2";
 
   // The rules of the world. Pieces are uppercase for White, lowercase for
   // Black. White's King reaching EXIT_ROW clears the floor.
@@ -1500,7 +1511,7 @@
   const capturedElement = document.querySelector("output");
   const promotionElement = document.querySelector("dialog");
 
-  let state = { board: [], turn: "w", captured: "", floor: 1, spawned: false, lastSpawnBudget: 0, maxRank: 0, dateSeed: "", moveLog: [], diedOnce: false };
+  let state = { board: [], turn: "w", captured: "", floor: 1, spawned: false, lastSpawnBudget: 0, maxRank: 0, dateSeed: "", moveLog: [], diedOnce: false, loneKing: "", quietMoves: 0, loneKingMoves: 0 };
 
   // A bug report carries the position, which says what the board looks like
   // but not how it got that way -- so "this sacrifice was illogical" arrived
@@ -1566,6 +1577,7 @@
   function updateUrl(push = false) {
     const params = new URLSearchParams({ fen: boardToFen() + "_" + state.turn, floor: state.floor, spawned: state.spawned ? "1" : "0", budget: state.lastSpawnBudget, maxRank: state.maxRank, dateSeed: state.dateSeed, v: APP_VERSION });
     if (state.diedOnce) params.set("died", "1");
+    if (state.loneKing) params.set("loneking", state.loneKing);
     if (state.captured) params.set("captured", state.captured);
     if (state.moveLog.length) params.set("last", state.moveLog.join(","));
     const url = "?" + params.toString();
@@ -1648,11 +1660,13 @@
     { label: "A little further", rows: ["8", "8", "8", "8", "2p2p2", "8"] },
     // Boss-gated wall (same tracker cluster, plus two reports specifically
     // about this floor: "wall pops up... when the knight is captured,
-    // wall goes down"). wallRow/bossPiece are read by dropWallIfBossDefeated
-    // -- the wall blocks rows 7-8 (White's own start) from rows 1-6 except
-    // a 2-square gap, and reverts to open squares once the Knight (the
-    // stage's own boss piece) is captured.
-    { label: "The Knight", rows: ["8", "8", "8", "3n4", "8", "###11###"], wallRow: 6, bossPiece: "n" },
+    // wall goes down"). wallRow/bossPiece are read by placeScriptedStage
+    // and dropWallIfBossDefeated -- the wall seals the whole exit row, no
+    // gap (hf7y-estate/chezz#142: "the gate is on the wrong rank. It should
+    // block the move from rank 8 to 9"), so the capture is mandatory and
+    // every carried piece can join the fight; it reverts to open squares
+    // once the Knight (the stage's own boss piece) is captured.
+    { label: "The Knight", rows: ["8", "8", "8", "3n4", "8", "8"], wallRow: EXIT_ROW, bossPiece: "n" },
     { label: "Building up", rows: ["8", "8", "8", "8", "1p2p2p", "3X2X1"] },
     // Boss-gated wall (tracker report 2026-07-17T04:36:10.534Z: "bishops
     // here should come with back wall. you need to defeat them to open
@@ -1663,7 +1677,7 @@
     // read as a mistake (tracker 2026-07-17T05:43:51.354Z + one duplicate),
     // and an odd file gap keeps that true under placeScriptedStage's
     // cyclic shifts, which move both bishops by the same amount.
-    { label: "Two Bishops", rows: ["8", "8", "8", "2b2b2", "8", "###11###"], wallRow: 6, bossPiece: "b" },
+    { label: "Two Bishops", rows: ["8", "8", "8", "2b2b2", "8", "8"], wallRow: EXIT_ROW, bossPiece: "b" },
     // Playtesting (see test/playtest-campaign.spec.mjs) found a lone Rook
     // is a genuine structural bottleneck, not a placement/ordering issue --
     // it can perpetually retreat along its own rank/file to dodge capture
@@ -1714,6 +1728,7 @@
       if (allSafe) { fallback = shifted; break; }
     }
     fallback.forEach((row, i) => { state.board[i + 1] = row; });
+    if (stage.wallRow != null) state.board[stage.wallRow].fill(TERRAIN_WALL);
     state.lastSpawnBudget = Math.max(state.lastSpawnBudget, armyCost(state.board));
   }
 
@@ -1758,6 +1773,7 @@
   // final boss is beaten.
   function spawnBlackArmy() {
     state.dateSeed = todayKey();
+    state.quietMoves = state.loneKingMoves = 0;
     // A run that has died once (hf7y/chezz#4) skips the scripted campaign
     // for good, including a re-rolled floor 1 -- see respawnFromFloorOne.
     const stage = state.diedOnce ? null : NARRATIVE_STAGES[state.floor - 1];
@@ -2025,7 +2041,7 @@
 
   // Roguelike respawn loop (hf7y/chezz#4, human-directed 2026-08-22: "build
   // it. I'll give my feedback as a play tester."). One row ahead of White's
-  // home rows (7/8, same row "The Knight" narrative stage gates on): a wall
+  // home rows (7/8): a wall
   // that narrows as the captured bank grows, so a run that died with a big
   // bank still has to fight through a real bottleneck to put that bank back
   // to work, rather than walking it straight in. Only ever called for a
@@ -2103,6 +2119,64 @@
   function announceBlackPawnMarchedOff() {
     const el = document.getElementById("floorMessage");
     if (el) el.textContent = "Black pawn reached the far rank with nothing to promote into, and was removed.";
+  }
+  // Boss stand-off (hf7y-estate/chezz#142): the exit gate never opens for a
+  // lone King, and a lone King can't force the boss's capture
+  // (research/balance/2026-09-23-knight-forced-capture-analytic.md), so the
+  // floor needs an ending that isn't the player resigning. Three endings
+  // (Zach, 2026-10-01: "Make these toggle-able with radio-buttons on site or
+  // a settings menu, and use fifty as default"):
+  //   fifty (default) -- FIFTY_MOVE_LIMIT moves with no capture while the
+  //                      gate is closed, lone King or not.
+  //   draw            -- insufficient material, declared at once.
+  //   reinforce       -- every LONE_KING_REINFORCE_MOVES lone-King moves a
+  //                      Black queen arrives on the empty square farthest
+  //                      from the King; the run then ends through checkDeath.
+  // The #loneKingRule radios persist the choice in localStorage, like the
+  // audio toggle; a ?loneking= in the URL (state.loneKing) outranks it until
+  // a radio is clicked.
+  // Called once per turn, after Black's reply. Returns true if it respawned
+  // the run. The counters are not in the URL: Undo/reload restarts them.
+  const LONE_KING_REINFORCE_MOVES = 8;
+  const FIFTY_MOVE_LIMIT = 50;
+  const LONE_KING_KEY = "chezzLoneKing";
+  const loneKingRule = () => state.loneKing || localStorage.getItem(LONE_KING_KEY) || "fifty";
+  document.getElementById("loneKingRule").addEventListener("change", e => {
+    localStorage.setItem(LONE_KING_KEY, e.target.value);
+    state.loneKing = "";
+    updateUrl();
+  });
+  function resolveBossStandoff(captureThisTurn) {
+    state.quietMoves = captureThisTurn ? 0 : state.quietMoves + 1;
+    if (!state.board[EXIT_ROW].includes(TERRAIN_WALL)) return false;
+    const loneKing = !state.board.some(row => row.some(c => c && c !== "K" && !isTerrain(c) && isWhitePiece(c)));
+    state.loneKingMoves = loneKing ? state.loneKingMoves + 1 : 0;
+    const el = document.getElementById("floorMessage");
+    let message;
+    const rule = loneKingRule();
+    if (rule === "reinforce") {
+      if (!loneKing || state.loneKingMoves % LONE_KING_REINFORCE_MOVES) return false;
+      const king = findWhiteKing(state.board);
+      let best = null, bestDistance = -1;
+      for (let y = EXIT_ROW + 1; y < BOARD_ROWS; y++) {
+        for (let x = 0; x < BOARD_COLS; x++) {
+          const d = Math.max(Math.abs(x - king.x), Math.abs(y - king.y));
+          if (state.board[y][x] === "" && d > bestDistance) { bestDistance = d; best = { x, y }; }
+        }
+      }
+      if (best) state.board[best.y][best.x] = "q";
+      if (el) el.textContent = "A lone King cannot open the gate. Black reinforcements arrive to hunt it down.";
+      return false;
+    } else if (rule === "draw") {
+      if (!loneKing) return false;
+      message = "Draw by insufficient material — a lone King cannot open the gate. Back to floor 1, captured bank kept.";
+    } else {
+      if (state.quietMoves < FIFTY_MOVE_LIMIT) return false;
+      message = `Draw — ${FIFTY_MOVE_LIMIT} moves without a capture. Back to floor 1, captured bank kept.`;
+    }
+    respawnFromFloorOne();
+    if (el) el.textContent = message;
+    return true;
   }
   function clearFloorMessage() {
     const el = document.getElementById("floorMessage");
@@ -2385,6 +2459,7 @@
       if (thinkingEl) thinkingEl.textContent = "";
       whiteHint = bm && bm.hint ? bm.hint : null;
       let blackPawnMarchedOff = false;
+      let captureThisTurn = capturedByWhite;
       if (bm) {
         const capturedByBlack = !!state.board[bm.toY][bm.toX];
         // Reuses the same applyMove the search explores hypothetical lines
@@ -2404,7 +2479,7 @@
           && nextBoard[bm.toY][bm.toX] === "";
         state.board = nextBoard;
         state.captured = pool;
-        if (capturedByBlack) playEarcon("capture");
+        if (capturedByBlack) { playEarcon("capture"); captureThisTurn = true; }
       }
       moveNeutralPiece(state.board);
       state.turn = "w";
@@ -2417,7 +2492,8 @@
       if (isWhiteKingInCheck(state.board)) playEarcon("check");
       // A death respawn replaces the board this hint was computed for with
       // a fresh floor 1 -- the hint's squares no longer mean anything.
-      if (checkDeath()) { whiteHint = null; announceDeath(); }
+      if (resolveBossStandoff(captureThisTurn)) whiteHint = null;
+      else if (checkDeath()) { whiteHint = null; announceDeath(); }
       updateUrl(false); renderBoard();
       await wait(MOVE_PACING_MS);
     }
@@ -2915,6 +2991,8 @@
     state.lastSpawnBudget = parseInt(params.get("budget") || "0");
     state.maxRank = parseInt(params.get("maxRank") || "0");
     state.diedOnce = params.get("died") === "1";
+    state.loneKing = params.get("loneking") || "";
+    document.querySelectorAll("#loneKingRule input").forEach(i => i.checked = i.value === loneKingRule());
     // Rides the URL like everything else, so back/forward rewinds the move
     // context along with the position instead of leaving a stale trail.
     state.moveLog = (params.get("last") || "").split(",").filter(Boolean).slice(-MOVE_LOG_LENGTH);
