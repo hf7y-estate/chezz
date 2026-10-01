@@ -98,12 +98,14 @@ test("drain files what is new and skips what an issue already carries", async ()
   const ran = [];
   const run = (...args) => {
     ran.push(args);
-    if (args[1] === "list") return JSON.stringify(args.includes("id-2 in:body") ? [{ number: 9 }] : []);
+    if (args[1] === "list") return JSON.stringify([{ body: "x\n- report: id-2\n" }]);
     return "";
   };
   const out = await drain(async () => new Response(JSON.stringify(pending), { status: 200 }), run);
   expect(out).toEqual({ filed: 1, skipped: 1 });
   expect(ran.filter(a => a[1] === "create")).toHaveLength(1);
+  expect(ran.filter(a => a[1] === "list")).toHaveLength(1); // one list read, never search
+  expect(ran.flat()).not.toContain("--search");
 });
 
 test("drain says BLIND-worthy things loudly: an unreadable queue throws", async () => {
