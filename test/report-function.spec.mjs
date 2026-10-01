@@ -11,6 +11,12 @@ function fakeStore() {
     list: async () => ({ blobs: [...m.keys()].map(key => ({ key })) }),
     setJSON: async (k, v) => { m.set(k, v); },
     get: async k => m.get(k) ?? null,
+    set: async (k, v, o = {}) => {
+      if (o.onlyIfNew && m.has(k)) return { modified: false };
+      if (o.onlyIfMatch && o.onlyIfMatch !== `etag:${m.get(k)}`) return { modified: false };
+      m.set(k, v); return { modified: true };
+    },
+    getWithMetadata: async k => (m.has(k) ? { data: m.get(k), etag: `etag:${m.get(k)}` } : null),
     delete: async k => { m.delete(k); },
   };
 }
@@ -18,7 +24,7 @@ function fakeStore() {
 // Every GitHub call the function makes is a read with no authorization header.
 async function withGithub(issues, run) {
   const store = fakeStore();
-  useStore(store);
+  useStore(store, fakeStore());
   const realFetch = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, init = {}) => {
@@ -68,7 +74,7 @@ test("a report whose id is already in an issue body leaves the queue", async () 
   const store = fakeStore();
   await store.setJSON("id-filed", { id: "id-filed", description: "old" });
   await store.setJSON("id-new", { id: "id-new", description: "new" });
-  useStore(store);
+  useStore(store, fakeStore());
   const realFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify([{ body: "x\n- report: id-filed\n" }]), { status: 200 });
   try {
@@ -78,6 +84,23 @@ test("a report whose id is already in an issue body leaves the queue", async () 
   } finally {
     globalThis.fetch = realFetch;
     useStore(undefined);
+  }
+});
+
+const claimReq = id => new Request("https://chezz.hf7y.com/.netlify/functions/report?scope=claim", { method: "POST", body: JSON.stringify({ id }) });
+
+test("a report can be claimed once; a second claim is refused until the first goes stale", async () => {
+  const store = fakeStore(), claimStore = fakeStore();
+  await store.setJSON("id-1", { id: "id-1", description: "x" });
+  useStore(store, claimStore);
+  try {
+    expect((await (await report(claimReq("id-1"))).json()).claimed).toBe(true);
+    expect((await (await report(claimReq("id-1"))).json()).claimed).toBe(false);
+    expect((await (await report(claimReq("no-such"))).json()).claimed).toBe(false);
+    claimStore.m.set("id-1", String(Date.now() - 11 * 60 * 1000)); // the first drainer died
+    expect((await (await report(claimReq("id-1"))).json()).claimed).toBe(true);
+  } finally {
+    useStore(undefined, undefined);
   }
 });
 
@@ -101,7 +124,8 @@ test("drain files what is new and skips what an issue already carries", async ()
     if (args[1] === "list") return JSON.stringify([{ body: "x\n- report: id-2\n" }]);
     return "";
   };
-  const out = await drain(async () => new Response(JSON.stringify(pending), { status: 200 }), run);
+  const fetchImpl = async (url, init) => new Response(JSON.stringify(init ? { ok: true, claimed: true } : pending), { status: 200 });
+  const out = await drain(fetchImpl, run);
   expect(out).toEqual({ filed: 1, skipped: 1 });
   expect(ran.filter(a => a[1] === "create")).toHaveLength(1);
   expect(ran.filter(a => a[1] === "list")).toHaveLength(1); // one list read, never search
@@ -110,4 +134,12 @@ test("drain files what is new and skips what an issue already carries", async ()
 
 test("drain says BLIND-worthy things loudly: an unreadable queue throws", async () => {
   await expect(drain(async () => new Response("no", { status: 502 }), () => "[]")).rejects.toThrow("HTTP 502");
+});
+
+test("drain leaves a report another drain has claimed", async () => {
+  const ran = [];
+  const run = (...args) => { ran.push(args); return "[]"; };
+  const fetchImpl = async (url, init) => new Response(JSON.stringify(init ? { ok: true, claimed: false } : [sample]), { status: 200 });
+  expect(await drain(fetchImpl, run)).toEqual({ filed: 0, skipped: 1 });
+  expect(ran.filter(a => a[1] === "create")).toHaveLength(0);
 });
