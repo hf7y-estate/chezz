@@ -412,13 +412,13 @@
      below the board, are not drag-drift targets, and hold the text a
      player actually wants to copy (a rank/share link, a leaderboard name,
      what shipped), so selection comes back on for them specifically. */
-  #instructions, #leaderboard, #featureChat, #changelog, #sweepStatus, #appVersion {
+  #instructions, #settings, #leaderboard, #featureChat, #changelog, #sweepStatus, #appVersion {
     user-select: text;
     -webkit-user-select: text;
     -webkit-touch-callout: default;
   }
 
-  #instructions, #leaderboard, #featureChat, #changelog {
+  #instructions, #settings, #leaderboard, #featureChat, #changelog {
     max-width: 380px;
     width: 280px;
     margin: 14px 0 0;
@@ -429,8 +429,9 @@
     box-shadow: 0 4px 0 var(--ink);
   }
 
-  #instructions { font-size: 14px; }
-  #instructions summary, #featureChat summary, #changelog summary {
+  #instructions, #settings { font-size: 14px; }
+  #settings fieldset { border: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  #instructions summary, #settings summary, #featureChat summary, #changelog summary {
     cursor: pointer;
     font-family: "Press Start 2P", system-ui, sans-serif;
     font-size: 10px;
@@ -536,6 +537,16 @@
   </p>
 </details>
 
+<details id="settings">
+  <summary>&#x2699;&#xFE0F; Settings</summary>
+  <fieldset id="loneKingRule">
+    <legend>Lone King at a boss gate</legend>
+    <label class="chatKindLabel"><input type="radio" name="loneKing" value="fifty" checked> Fifty-move draw</label>
+    <label class="chatKindLabel"><input type="radio" name="loneKing" value="draw"> Instant draw</label>
+    <label class="chatKindLabel"><input type="radio" name="loneKing" value="reinforce"> Reinforcements</label>
+  </fieldset>
+</details>
+
 <dl id="leaderboard">
   <dt>Your best</dt>
   <dd><data id="leaderboardMine"></data></dd>
@@ -568,7 +579,7 @@
   // updateUrl) so a bug report's link shows which build it was filed
   // against, and displayed in the footer for a quick eyeball diff between
   // deployments without needing devtools.
-  const APP_VERSION = "2026-10-01.1";
+  const APP_VERSION = "2026-10-01.2";
 
   // The rules of the world. Pieces are uppercase for White, lowercase for
   // Black. White's King reaching EXIT_ROW clears the floor.
@@ -2112,18 +2123,29 @@
   // Boss stand-off (hf7y-estate/chezz#142): the exit gate never opens for a
   // lone King, and a lone King can't force the boss's capture
   // (research/balance/2026-09-23-knight-forced-capture-analytic.md), so the
-  // floor needs an ending that isn't the player resigning. Three candidate
-  // endings, picked by ?loneking= while Zach chooses between them:
-  //   draw (default) -- insufficient material, declared at once.
-  //   reinforce      -- every LONE_KING_REINFORCE_MOVES lone-King moves a
-  //                     Black queen arrives on the empty square farthest
-  //                     from the King; the run then ends through checkDeath.
-  //   fifty          -- FIFTY_MOVE_LIMIT moves with no capture while the
-  //                     gate is closed, lone King or not.
+  // floor needs an ending that isn't the player resigning. Three endings
+  // (Zach, 2026-10-01: "Make these toggle-able with radio-buttons on site or
+  // a settings menu, and use fifty as default"):
+  //   fifty (default) -- FIFTY_MOVE_LIMIT moves with no capture while the
+  //                      gate is closed, lone King or not.
+  //   draw            -- insufficient material, declared at once.
+  //   reinforce       -- every LONE_KING_REINFORCE_MOVES lone-King moves a
+  //                      Black queen arrives on the empty square farthest
+  //                      from the King; the run then ends through checkDeath.
+  // The #loneKingRule radios persist the choice in localStorage, like the
+  // audio toggle; a ?loneking= in the URL (state.loneKing) outranks it until
+  // a radio is clicked.
   // Called once per turn, after Black's reply. Returns true if it respawned
   // the run. The counters are not in the URL: Undo/reload restarts them.
   const LONE_KING_REINFORCE_MOVES = 8;
   const FIFTY_MOVE_LIMIT = 50;
+  const LONE_KING_KEY = "chezzLoneKing";
+  const loneKingRule = () => state.loneKing || localStorage.getItem(LONE_KING_KEY) || "fifty";
+  document.getElementById("loneKingRule").addEventListener("change", e => {
+    localStorage.setItem(LONE_KING_KEY, e.target.value);
+    state.loneKing = "";
+    updateUrl();
+  });
   function resolveBossStandoff(captureThisTurn) {
     state.quietMoves = captureThisTurn ? 0 : state.quietMoves + 1;
     if (!state.board[EXIT_ROW].includes(TERRAIN_WALL)) return false;
@@ -2131,7 +2153,8 @@
     state.loneKingMoves = loneKing ? state.loneKingMoves + 1 : 0;
     const el = document.getElementById("floorMessage");
     let message;
-    if (state.loneKing === "reinforce") {
+    const rule = loneKingRule();
+    if (rule === "reinforce") {
       if (!loneKing || state.loneKingMoves % LONE_KING_REINFORCE_MOVES) return false;
       const king = findWhiteKing(state.board);
       let best = null, bestDistance = -1;
@@ -2144,12 +2167,12 @@
       if (best) state.board[best.y][best.x] = "q";
       if (el) el.textContent = "A lone King cannot open the gate. Black reinforcements arrive to hunt it down.";
       return false;
-    } else if (state.loneKing === "fifty") {
-      if (state.quietMoves < FIFTY_MOVE_LIMIT) return false;
-      message = `Draw — ${FIFTY_MOVE_LIMIT} moves without a capture. Back to floor 1, captured bank kept.`;
-    } else {
+    } else if (rule === "draw") {
       if (!loneKing) return false;
       message = "Draw by insufficient material — a lone King cannot open the gate. Back to floor 1, captured bank kept.";
+    } else {
+      if (state.quietMoves < FIFTY_MOVE_LIMIT) return false;
+      message = `Draw — ${FIFTY_MOVE_LIMIT} moves without a capture. Back to floor 1, captured bank kept.`;
     }
     respawnFromFloorOne();
     if (el) el.textContent = message;
@@ -2969,6 +2992,7 @@
     state.maxRank = parseInt(params.get("maxRank") || "0");
     state.diedOnce = params.get("died") === "1";
     state.loneKing = params.get("loneking") || "";
+    document.querySelectorAll("#loneKingRule input").forEach(i => i.checked = i.value === loneKingRule());
     // Rides the URL like everything else, so back/forward rewinds the move
     // context along with the position instead of leaving a stale trail.
     state.moveLog = (params.get("last") || "").split(",").filter(Boolean).slice(-MOVE_LOG_LENGTH);

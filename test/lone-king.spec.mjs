@@ -2,9 +2,8 @@
 // lone King, and a lone King can't force the boss's capture
 // (research/balance/2026-09-23-knight-forced-capture-analytic.md), so the
 // floor needs an ending the player doesn't have to resign into. Zach,
-// 2026-10-01: "How about building me all the options so I can choose?" --
-// ?loneking=draw (the default), ?loneking=reinforce, ?loneking=fifty. See
-// resolveBossStandoff.
+// 2026-10-01: "Make these toggle-able with radio-buttons on site or a
+// settings menu, and use fifty as default". See resolveBossStandoff.
 import { test, expect } from "@playwright/test";
 import { GAME_URL } from "./helpers.mjs";
 
@@ -36,18 +35,59 @@ const snapshot = () => ({
   search: location.search,
 });
 
-test("default (no parameter): a lone King under a closed gate is a draw by insufficient material, at once, and respawns from floor 1", async ({ page }) => {
-  await knightFloor(page, "");
-  const result = await page.evaluate(async snapshotSrc => {
-    const gateClosedBefore = state.board[EXIT_ROW].every(c => c === "#");
-    await makeMove(4, 8, 4, 7);
-    return { gateClosedBefore, ...eval("(" + snapshotSrc + ")")() };
-  }, snapshot.toString());
+// One quiet King move from the Knight floor, with the count one short of
+// the fifty-move limit: "fifty" draws on the count, "draw" on insufficient
+// material, "reinforce" plays on -- so the message names the rule in force.
+const ruleInForce = page => page.evaluate(async snapshotSrc => {
+  state.quietMoves = FIFTY_MOVE_LIMIT - 1;
+  await makeMove(4, 8, 4, 7);
+  return { checked: document.querySelector("#loneKingRule input:checked").value, ...eval("(" + snapshotSrc + ")")() };
+}, snapshot.toString());
 
-  expect(result.gateClosedBefore).toBe(true); // the gate did NOT open for the lone King
-  expect(result.floor).toBe(1);
-  expect(result.diedOnce).toBe(true);         // respawnFromFloorOne's own marker
+test("default (no parameter, nothing chosen): the fifty-move rule, and a lone King is not drawn at once", async ({ page }) => {
+  await knightFloor(page, "");
+  const early = await page.evaluate(async snapshotSrc => {
+    await makeMove(4, 8, 4, 7);
+    return { stored: localStorage.getItem("chezzLoneKing"), ...eval("(" + snapshotSrc + ")")() };
+  }, snapshot.toString());
+  expect(early).toMatchObject({ stored: null, floor: 4, diedOnce: false, gateClosed: true, message: "" });
+  expect(early.search).not.toContain("loneking");
+
+  await knightFloor(page, "");
+  const late = await ruleInForce(page);
+  expect(late.checked).toBe("fifty");
+  expect(late.floor).toBe(1);
+  expect(late.message).toContain("50 moves without a capture");
+});
+
+test("each radio changes the rule, and the choice survives a reload through localStorage", async ({ page }) => {
+  const messages = { draw: "insufficient material", reinforce: "", fifty: "50 moves without a capture" };
+  for (const [rule, message] of Object.entries(messages)) {
+    await page.goto(GAME_URL);
+    await page.locator("#settings summary").click();
+    await page.locator(`#loneKingRule input[value="${rule}"]`).check();
+    expect(await page.evaluate(() => localStorage.getItem("chezzLoneKing"))).toBe(rule);
+
+    await knightFloor(page, ""); // a fresh load of the bare URL: only localStorage carries the choice
+    const result = await ruleInForce(page);
+    expect(result.checked).toBe(rule);
+    expect(result.floor).toBe(rule === "reinforce" ? 4 : 1);
+    if (message) expect(result.message).toContain(message); else expect(result.message).toBe("");
+  }
+});
+
+test("?loneking= outranks the stored choice until a radio is clicked, which drops it from the URL", async ({ page }) => {
+  await page.goto(GAME_URL);
+  await page.evaluate(() => localStorage.setItem("chezzLoneKing", "reinforce"));
+  await knightFloor(page, "?loneking=draw");
+  const result = await ruleInForce(page);
+  expect(result.checked).toBe("draw");
   expect(result.message).toContain("insufficient material");
+  expect(result.search).toContain("loneking=draw");
+
+  await page.locator("#settings summary").click();
+  await page.locator('#loneKingRule input[value="fifty"]').check();
+  expect(await page.evaluate(() => [location.search.includes("loneking"), loneKingRule()])).toEqual([false, "fifty"]);
 });
 
 test("loneking=draw is the same rule, spelled out, and the parameter survives the URL rewrite", async ({ page }) => {
@@ -62,8 +102,8 @@ test("loneking=draw is the same rule, spelled out, and the parameter survives th
   expect(result.search).toContain("loneking=draw");
 });
 
-test("default: no draw while White still has a piece besides the King", async ({ page }) => {
-  await knightFloor(page, "", { "07": "P" });
+test("loneking=draw: no draw while White still has a piece besides the King", async ({ page }) => {
+  await knightFloor(page, "?loneking=draw", { "07": "P" });
   const result = await page.evaluate(async snapshotSrc => {
     await makeMove(4, 8, 4, 7);
     return eval("(" + snapshotSrc + ")")();
