@@ -15,7 +15,7 @@ import { stamped } from "./answered-issues.mjs";
 // the old name still resolves for direct API calls but not for the
 // --label search this file's dedup issue-list relies on (see
 // check-answer-channel.mjs for the full explanation).
-const REPO = process.env.CHEZZ_ISSUES_REPO || "hf7y-estate/chezz";
+export const REPO = process.env.CHEZZ_ISSUES_REPO || "hf7y-estate/chezz";
 const LABEL = "nightly-builds-domain-down";
 // Provenance stamp job id (hf7y/chezz#21). Without it, everything this script
 // posts under the shared `hf7y` token is indistinguishable from a reply Zach
@@ -118,13 +118,24 @@ function fileBlocker(failures) {
   );
 }
 
+// "repo:<REPO>" gives gh-sign's close_check a landing ref to find
+// (grammar_landing_ref) -- a close naming nothing checkable is REFUSED.
+// Must track REPO, not a hardcoded literal: a stale "repo:hf7y/chezz" here
+// survived both the 2026-09-25 org-transfer fallout fix (#146) and the
+// 2026-10-01 Netlify-only rewrite (#147) because it was an inline string,
+// not the REPO constant every other `gh` call already used -- same drift
+// class CLAUDE.md names for `--label` search queries, just in a landing-ref
+// string instead of a query. Exported (unstamped) so a test can pin it
+// without shelling out to the real `gh issue close`.
+export function closeComment() {
+  return `check-live-deploy: every route is serving again as of this run (repo:${REPO}).`;
+}
+
 function closeStaleIssue(number) {
-  // "repo:hf7y/chezz" gives gh-sign's close_check a landing ref to find
-  // (grammar_landing_ref) -- a close naming nothing checkable is REFUSED.
   execFileSync(
     "gh",
     ["issue", "close", String(number), "--repo", REPO,
-     "--comment", stamped("check-live-deploy: every route is serving again as of this run (repo:hf7y/chezz).", JOB)],
+     "--comment", stamped(closeComment(), JOB)],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 30000 }
   );
 }

@@ -14,10 +14,12 @@ import { test, expect } from "@playwright/test";
 import {
   checkDomain,
   checkClassicReportUrl,
+  closeComment,
   DOMAINS,
   GAME_PATHS,
   REPORT_ENDPOINT,
   CLASSIC_PAGES,
+  REPO,
 } from "../scripts/check-live-deploy.mjs";
 
 test("a 200 response is reported ok", async () => {
@@ -79,4 +81,16 @@ test("checkClassicReportUrl: a page naming neither URL fails loud instead of pas
   const fakeFetch = async () => ({ status: 200, text: async () => "<script>const LEADERBOARD_URL = \"\";</script>" });
   const result = await checkClassicReportUrl({ name: "example", url: "https://example.test/classic.html" }, fakeFetch);
   expect(result.ok).toBe(false);
+});
+
+// The close comment's "repo:<name>" landing ref is gh-sign's only way to
+// find what a close is actually about (grammar_landing_ref) -- it has to
+// name the repo this script is actually running against, not a hardcoded
+// org/name pair that can drift out from under it the way "repo:hf7y/chezz"
+// did across both the 2026-09-25 org transfer (#146 fixed the `--repo` flag
+// but missed this inline string) and the 2026-10-01 Netlify-only rewrite
+// (#147, which carried the same stale string forward unchanged).
+test("the stale-issue close comment's landing ref names the live REPO, not a hardcoded org/name", () => {
+  expect(closeComment()).toContain(`repo:${REPO}`);
+  expect(closeComment()).not.toContain("hf7y/chezz");
 });
