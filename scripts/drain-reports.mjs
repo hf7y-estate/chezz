@@ -49,10 +49,14 @@ const gh = (...args) => execFileSync("gh", args, { encoding: "utf8", timeout: 60
 export async function drain(fetchImpl = fetch, run = gh) {
   const res = await fetchImpl(PENDING);
   if (!res.ok) throw new Error(`pending is unreadable: HTTP ${res.status}`);
+  const pending = await res.json();
+  if (!pending.length) return { filed: 0, skipped: 0 };
+  // The issue LIST, not search: search had not indexed an issue filed seconds
+  // earlier, so a second run filed it again (#159 and #160, 2026-10-01).
+  const already = run("issue", "list", "--repo", REPO, "--state", "all", "--label", "player-report", "--limit", "200", "--json", "body");
   let filed = 0, skipped = 0;
-  for (const r of await res.json()) {
-    const found = JSON.parse(run("issue", "list", "--repo", REPO, "--state", "all", "--search", `${r.id} in:body`, "--json", "number"));
-    if (found.length) { skipped++; continue; }
+  for (const r of pending) {
+    if (already.includes(r.id)) { skipped++; continue; }
     const { title, body, labels } = issueFor(r);
     run("issue", "create", "--repo", REPO, "--title", title, "--body", body, ...labels.flatMap(l => ["--label", l]));
     filed++;
