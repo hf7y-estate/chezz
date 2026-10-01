@@ -332,32 +332,19 @@ line of why.
 Resolved human design calls that were living only in the coordination
 files deleted in realisateur#293 (their history is in git). They are decisions, not backlog:
 
-- **Death / respawn (superseded 2026-08-22, issue #4):** a White-side
-  (player) zero-legal-moves deadlock is this game's only "death" signal.
-  It now sends the run back to floor 1 as a fresh lone King (`checkDeath()`/
-  `respawnFromFloorOne()`) rather than resetting just the current floor —
-  the 2026-07-19 "never restarts from floor 1" rule this overturns is
-  retired. The captured bank and the spawn-budget ratchet both survive the
-  death untouched, so a respawned floor 1 is proportionally as tough as the
-  run had already earned; a `diedOnce` run also permanently skips the
-  scripted `NARRATIVE_STAGES` campaign (a fixed intro, not something to
-  replay every death) and gets a captured-bank-sized terrain gate
-  (`placeDeathGate()`) instead. Built from Zach's sketch, not a full spec —
-  expect this to be retuned from playtesting feedback.
-- **Scripted bosses:** a `NARRATIVE_STAGES` boss must never be capturable on
-  move 1; `placeScriptedStage` is capture-aware against the carried army.
+- **Death / respawn:** pinned by `test/death-respawn.spec.mjs` (provenance
+  and reasoning in that file's header comment, issue #4).
+- **Scripted bosses:** pinned by `test/spawn-safety.spec.mjs`'s "scripted
+  lone-boss stages are never capturable on move 1 by a plausible carried
+  army" (provenance and reasoning in that test's own comment).
 - **Colour scheme is monochrome** — an explicit, repeated human ask. Do not
-  reintroduce a saturated or hued palette without a fresh one.
-- **Move-into-check:** hanging the KING ONLY is illegal (a move leaving the
-  King capturable next turn is rejected). Other pieces stay hangable —
-  unchanged risk/reward. Done 2026-07-24 (`2783c357`), `isLegalMove`.
-- **Audio + vibration (answered 2026-08-22, issue #5):** default ON for
-  capture/check/floor-clear, short pre-rendered wooden-click WAV samples
-  (`tools/generate-earcons.mjs`, baked in by `tools/wire-earcons.mjs`) rather
-  than live WebAudio FM synthesis — one shared mute toggle (`#audioToggle`,
-  `localStorage.chezzAudioEnabled`) covers both channels. Live FM synthesis
-  was asked to be researched separately in a branch with findings reported as
-  a draft PR, not built on `main`.
+  reintroduce a saturated or hued palette without a fresh one. (No test
+  pins this yet — it's a UI-wide property, not covered by the sprite-palette
+  check in `test/sprite-postprocess.spec.mjs`.)
+- **Move-into-check:** pinned by `test/move-into-check.spec.mjs` (provenance
+  and reasoning in that file's header comment).
+- **Audio + vibration:** pinned by `test/earcons.spec.mjs` (provenance and
+  reasoning in that file's header comment, issue #5).
 
 ## Difficulty theory: analytic material sufficiency (answered 2026-08-16, issue #6)
 
