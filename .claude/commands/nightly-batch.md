@@ -146,8 +146,8 @@ or decided — a decline that only lives in a report is a decline he never
 agreed to.
 
 **Sweep the WHOLE open bug queue, first, before the feature backlog.** #41
-retired the original two dead Actions runners; #57 restored one
-(`.github/workflows/agent.yml`, by hand only since 2026-10-01). Check for
+retired the original two dead Actions runners and #57's third was deleted
+2026-10-01; the estate's container pass on dexter is the runner. Check for
 an open PR or recent branch first. Either way,
 nothing else reads the player-report tracker -- unfetched here is unseen.
 

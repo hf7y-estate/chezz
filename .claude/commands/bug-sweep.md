@@ -8,7 +8,7 @@ a human call, leave it open with a note instead of guessing.
 
 **This command has no runner of its own as of 2026-08-19.** Its Actions
 workflow was deleted with `nightly-batch.yml`; `/nightly-batch` (run from
-`.github/workflows/agent.yml`, by hand only since 2026-10-01) now sweeps the bug queue itself and follows the steps below.
+the estate's container pass on dexter) now sweeps the bug queue itself and follows the steps below.
 Run this by hand when you want a sweep between ticks.
 
 ## 1. Fetch open reports
@@ -219,7 +219,6 @@ This fast sweep must NOT act on or close an answered issue itself.
 That handoff is real as of 2026-08-15 and was not before: `/nightly-batch`
 had no workflow running it, so this sweep was correctly declining answered
 issues and passing them to a consumer that never ran. Four issues Zach had
-greenlit sat unbuilt for four days. Its runner is `.github/workflows/agent.yml`, by hand only since
-2026-10-01 (DESIGN-NOTES.md "Dispatch and checks"). If you are tempted to relax this rule, check that a
+greenlit sat unbuilt for four days. Its runner is the estate's container pass on dexter (#36). If you are tempted to relax this rule, check that a
 runner still exists first — the rule is only safe while something on the
 other side of it is running.
