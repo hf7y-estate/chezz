@@ -1,6 +1,8 @@
 // report.js -- in-game report channel, backed by GitHub Issues (replaces
-// leaderboard/Code.gs, hf7y/chezz#83). GITHUB_ISSUE_TOKEN lives only in
-// Netlify's env, never echoed; reads proxy through here too (5000/hour vs. 60).
+// leaderboard/Code.gs, hf7y/chezz#83). The credential lives only in Netlify's
+// env, never echoed; reads proxy through here too (5000/hour vs. 60).
+
+import { createSign } from "node:crypto";
 
 // 2026-09-25: repo moved hf7y/chezz -> hf7y-estate/chezz (realisateur#672).
 // GitHub 301s REST requests for the old name, and `fetch` downgrades a
@@ -36,6 +38,31 @@ function gh(path, token, init = {}) {
   });
 }
 
+// The estate's GitHub App is the credential (hf7y-estate/realisateur#1365):
+// the org refuses personal tokens that live longer than a year, which is what
+// 403'd GITHUB_ISSUE_TOKEN after the move. The function mints a one-hour
+// installation token that can only write issues on this repo, and reuses it
+// until just before it expires.
+let minted = { token: "", exp: 0 };
+
+async function appToken(appId, key) {
+  if (Date.now() < minted.exp) return minted.token;
+  const now = Math.floor(Date.now() / 1000);
+  const b64 = o => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({ iat: now - 60, exp: now + 540, iss: appId })}`;
+  const jwt = `${unsigned}.${createSign("RSA-SHA256").update(unsigned).sign(key.replace(/\\n/g, "\n"), "base64url")}`;
+  const inst = await gh(`/repos/${REPO}/installation`, jwt);
+  if (!inst.ok) return "";
+  const res = await gh(`/app/installations/${(await inst.json()).id}/access_tokens`, jwt, {
+    method: "POST",
+    body: JSON.stringify({ repositories: [REPO.split("/")[1]], permissions: { issues: "write" } }),
+  });
+  if (!res.ok) return "";
+  const { token, expires_at } = await res.json();
+  minted = { token, exp: Date.parse(expires_at) - 300000 };
+  return token;
+}
+
 function issueBody({ name, url, kind, description }) {
   return [
     description,
@@ -66,11 +93,13 @@ function toEntry(issue) {
 }
 
 export default async (req) => {
-  const token = Netlify.env.get("GITHUB_ISSUE_TOKEN");
+  const appId = Netlify.env.get("GITHUB_APP_ID");
+  const appKey = Netlify.env.get("GITHUB_APP_KEY");
+  const token = appId && appKey ? await appToken(appId, appKey) : Netlify.env.get("GITHUB_ISSUE_TOKEN");
   const scope = new URL(req.url).searchParams;
 
   if (!token) {
-    return json({ ok: false, error: "GITHUB_ISSUE_TOKEN is not set on this site" }, 503);
+    return json({ ok: false, error: "no working GitHub credential on this site" }, 503);
   }
 
   if (req.method === "POST") {
