@@ -81,20 +81,3 @@ One required check: `gate`. A PR opened by the Actions bot gets its
 stuck one in place:
 `gh api -X POST repos/hf7y-estate/chezz/actions/runs/<id>/rerun` (find it with
 `gh run list --branch <branch> --json databaseId,name,event,conclusion`).
-
-## Ecosystem protocols
-
-When a change reaches outside this repo, three verbs are the interface. Each
-prints its own contract; none of it is restated here, and none of it is a
-checklist to recite from memory.
-
-- `notify-senechal <door> <field>=<value>` — file a crontab, device or
-  footprint change on senechal's registry. Standing policy for any change to
-  crontabs, dotfiles, systemd units or WM config. `--doors` lists the doors.
-- `check-project-busy <project>` — before writing DIRECTLY into another
-  project's files. Front-door writes carry their own regulator.
-- `consulte` — read the estate's own prose.
-
-`discipline` and `BUILD-DISCIPLINE.md` were deleted by hf7y/realisateur#687:
-the rows a mechanism already enforced are enforced by that mechanism, and the
-rest were unenforced prose. Do not reinstate either here.
