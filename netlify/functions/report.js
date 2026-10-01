@@ -15,10 +15,13 @@ const MAX_DESCRIPTION = 4000;
 const MAX_TITLE = 72;
 const MAX_PENDING = 500; // a public write endpoint must not be an unbounded store
 
-// The test seam: Netlify Blobs only exists inside Netlify's runtime.
-let store;
-export function useStore(s) { store = s; }
-const reports = () => store || getStore("reports");
+// The test seam: Netlify Blobs only exists inside Netlify's runtime. Strong
+// consistency, because a claim that another reader cannot see yet is no claim.
+let store, claimStore;
+export function useStore(s, c) { store = s; claimStore = c; }
+const reports = () => store || getStore({ name: "reports", consistency: "strong" });
+const claims = () => claimStore || getStore({ name: "report-claims", consistency: "strong" });
+const CLAIM_MS = 10 * 60 * 1000; // a drainer that died mid-filing frees its report after this
 
 // CORS: classic.html posts here by absolute URL (hf7y/chezz#128).
 const json = (body, status = 200, headers = {}) =>
@@ -60,6 +63,22 @@ export default async (req) => {
       return json({ ok: false, error: "body is not JSON" }, 400);
     }
 
+    // Two drains starting together would both file the same report. Whoever
+    // creates the claim first files it; the write is atomic at the store.
+    if (scope.get("scope") === "claim") {
+      const id = String(payload.id || "");
+      if (!(await reports().get(id, { type: "json" }))) return json({ ok: true, claimed: false });
+      const now = String(Date.now());
+      let { modified } = await claims().set(id, now, { onlyIfNew: true });
+      if (!modified) {
+        const held = await claims().getWithMetadata(id);
+        if (held && Date.now() - Number(held.data) > CLAIM_MS) {
+          ({ modified } = await claims().set(id, now, { onlyIfMatch: held.etag }));
+        }
+      }
+      return json({ ok: true, claimed: modified });
+    }
+
     const description = String(payload.description || "").trim();
     if (!description) return json({ ok: false, error: "description is required" }, 400);
     if (description.length > MAX_DESCRIPTION) {
@@ -94,7 +113,7 @@ export default async (req) => {
     const filed = (await res.json()).map(i => i.body || "").join("\n");
     const pending = [];
     for (const { key } of blobs) {
-      if (filed.includes(key)) await reports().delete(key);
+      if (filed.includes(key)) { await reports().delete(key); await claims().delete(key); }
       else pending.push(await reports().get(key, { type: "json" }));
     }
     return json(pending.filter(Boolean));

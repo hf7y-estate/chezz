@@ -57,6 +57,8 @@ export async function drain(fetchImpl = fetch, run = gh) {
   let filed = 0, skipped = 0;
   for (const r of pending) {
     if (already.includes(r.id)) { skipped++; continue; }
+    const claim = await fetchImpl(PENDING.replace("scope=pending", "scope=claim"), { method: "POST", body: JSON.stringify({ id: r.id }) });
+    if (!claim.ok || !(await claim.json()).claimed) { skipped++; continue; } // another drain has it
     const { title, body, labels } = issueFor(r);
     run("issue", "create", "--repo", REPO, "--title", title, "--body", body, ...labels.flatMap(l => ["--label", l]));
     filed++;
