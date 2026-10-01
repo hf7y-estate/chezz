@@ -146,9 +146,9 @@ or decided — a decline that only lives in a report is a decline he never
 agreed to.
 
 **Sweep the WHOLE open bug queue, first, before the feature backlog.** #41
-retired the original two dead Actions runners for monkey's tick alone; #57
-later restored a second, uncoordinated one (`.github/workflows/agent.yml`,
-daily 09:00 UTC). Check for an open PR or recent branch first. Either way,
+retired the original two dead Actions runners; #57 restored one
+(`.github/workflows/agent.yml`, by hand only since 2026-10-01). Check for
+an open PR or recent branch first. Either way,
 nothing else reads the player-report tracker -- unfetched here is unseen.
 
 Fetch `gh issue list --repo hf7y-estate/chezz --label player-report --label bug

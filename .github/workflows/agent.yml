@@ -1,8 +1,9 @@
 name: Agent
 
+# Parked 2026-10-01: by hand only. The nightly dispatch is moving to the
+# estate's dexter containers (hf7y-estate/realisateur agent/); see
+# DESIGN-NOTES.md "Dispatch and checks".
 on:
-  schedule:
-    - cron: '0 9 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -55,14 +56,12 @@ jobs:
             /nightly-batch
 
             Fully unattended, no human review step. The open GitHub issues on
-            hf7y/chezz are the backlog and the scoping authority; work the
+            hf7y-estate/chezz are the backlog and the scoping authority; work the
             answered ones first (a non-agent-stamped comment from `hf7y` IS
             the answer, whatever the labels or state say).
 
-            This repo ALSO dispatches from monkey's self-dev tick, and nothing
-            locks between the two runners -- they are staggered, not
-            coordinated. Before starting an issue, check that no open PR and
-            no recent branch already covers it, and pick another if one does.
+            Before starting an issue, check that no open PR and no recent
+            branch already covers it, and pick another if one does.
 
             Once `npm run check` passes and you have committed, push a
             uniquely named branch and open a pull request into main, then run
