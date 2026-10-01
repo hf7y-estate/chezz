@@ -10,6 +10,7 @@
     "check": "npm run check-syntax && npm run check-size && npm test",
     "check-classic": "node scripts/check-classic.mjs",
     "check-live-deploy": "node scripts/check-live-deploy.mjs",
+    "drain-reports": "node scripts/drain-reports.mjs",
     "prepare": "node scripts/setup-hooks.mjs",
     "pieces:generate": "node tools/generate-pieces.mjs",
     "pieces:generate-16": "node tools/generate-glyph-sprites.mjs",
@@ -20,5 +21,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.3"
   }
 }
