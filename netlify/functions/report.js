@@ -6,8 +6,7 @@
 // GitHub 301s REST requests for the old name, and `fetch` downgrades a
 // redirected POST to GET per the WHATWG spec -- so every report submission
 // (`method: "POST"` below) was silently turning into a GET that listed
-// issues instead of filing one, while still returning `res.ok` true. Reads
-// (GET) kept working, which is why this stayed quiet.
+// issues instead of filing one, while still returning `res.ok` true.
 const REPO = "hf7y-estate/chezz";
 const LABEL = "player-report";
 const API = "https://api.github.com";
@@ -128,7 +127,7 @@ export default async (req) => {
       `/repos/${REPO}/issues?state=closed&labels=${LABEL}&per_page=100&sort=updated`,
       token,
     );
-    if (!res.ok) return json({ ok: false, error: "unreadable" }, 502);
+    if (!res.ok) return json({ ok: false, error: `unreadable (${res.status})` }, 502);
     const closed = (await res.json()).filter(i => !i.pull_request);
     if (!closed.length) return json({});
     return json({ timestamp: closed[0].closed_at || closed[0].updated_at, fixed: closed.length });
@@ -144,7 +143,7 @@ export default async (req) => {
       `/repos/${REPO}/issues?state=${state}&labels=${LABEL}&per_page=100&sort=updated`,
       token,
     );
-    if (!res.ok) return json({ ok: false, error: "unreadable" }, 502);
+    if (!res.ok) return json({ ok: false, error: `unreadable (${res.status})` }, 502);
 
     let entries = (await res.json()).filter(i => !i.pull_request).map(toEntry);
     if (type !== "all") entries = entries.filter(e => e.type === type);

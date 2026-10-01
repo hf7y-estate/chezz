@@ -1,37 +1,17 @@
 #!/usr/bin/env bash
-# build-site.sh -- assemble _site/. ONE copy, called by Netlify's build
-# command and by deploy-narrative-pages.yml, which used to restate it inline.
+# build-site.sh -- assemble _site/. Called by Netlify's build command.
 # FAILS LOUDLY: a missing piece breaks the deploy rather than publishing a
 # site quietly short of /classic/ or /nightly-builds/.
 set -euo pipefail
 
 OUT="${1:-_site}"
 export CLASSIC_BRANCH="${CLASSIC_BRANCH:-chezz-classic}"
-ROOT_REDIRECT="${ROOT_REDIRECT:-}" # hf7y/chezz#83, set only by deploy-narrative-pages.yml
-NETLIFY_URL="https://chezz.hf7y.com/"
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
-if [ -n "$ROOT_REDIRECT" ]; then
-  cat > "$OUT/index.html" <<EOF
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=$NETLIFY_URL">
-<link rel="canonical" href="$NETLIFY_URL">
-<title>Chezz has moved</title>
-</head>
-<body>
-<p>Chezz has moved to <a href="$NETLIFY_URL">$NETLIFY_URL</a>.</p>
-</body>
-</html>
-EOF
-else
-  # index1.html is the whole game; it is served AS index.html at the root.
-  cp index1.html "$OUT/index.html"
-fi
+# index1.html is the whole game; it is served AS index.html at the root.
+cp index1.html "$OUT/index.html"
 cp -r nightly-builds "$OUT/nightly-builds"
 
 # Classic's shell (HTML/CSS, leaderboard, promotion UI, drag/click

@@ -80,3 +80,16 @@ jobs:
         run: |
           test "$PREFLIGHT" = success
           test "$PLAYWRIGHT" = success
+
+  # Not in gate's needs: it reads the live site, which no PR can change.
+  live:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/check-live-deploy.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
