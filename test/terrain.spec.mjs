@@ -1,7 +1,8 @@
 // Terrain (priority queue item 4, DESIGN-NOTES.md "Terrain: walls +
 // holes"): impassable squares. A hole (TERRAIN_HOLE) is permanent; a wall
-// (TERRAIN_WALL) is boss-gated and drops once its scripted stage's boss
-// piece is captured (see dropWallIfBossDefeated, wired into makeMove).
+// (TERRAIN_WALL) is boss-gated: it seals the exit row and drops once its
+// scripted stage's boss piece is captured (see dropWallIfBossDefeated,
+// wired into makeMove).
 // Both are authored directly into NARRATIVE_STAGES row FEN strings.
 import { test, expect } from "@playwright/test";
 import { GAME_URL, fenRowsToBoard } from "./helpers.mjs";
@@ -68,116 +69,94 @@ test("a board round-trips through FEN with terrain squares intact", async ({ pag
   expect(roundTripped[8][4]).toBe("K");
 });
 
-test("The Knight stage's wall blocks the gap-free columns and drops once the Knight is captured", async ({ page }) => {
-  const stage = await page.evaluate(() => NARRATIVE_STAGES.find(s => s.label === "The Knight"));
-  expect(stage.wallRow).toBeTruthy();
-  expect(stage.bossPiece).toBe("n");
+// The boss gate sits on the exit row with no gap (hf7y-estate/chezz#142,
+// Zach 2026-10-01: "the gate is on the wrong rank. It should block the move
+// from rank 8 to 9"). It replaces the old row-6 wall with a 2-square gap,
+// which only separated White's army from the arena and never touched the
+// exit -- and with it the old guardrail test that a gap-free row-6 wall
+// would trap White on rows 7-8, which no longer describes any wall here.
+function spawnBossStage(label) {
+  state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
+  state.board[8][4] = "K";
+  for (let x = 0; x < BOARD_COLS; x++) { if (x !== 4) state.board[7][x] = "P"; }
+  state.floor = NARRATIVE_STAGES.findIndex(s => s.label === label) + 1;
+  state.diedOnce = false;
+  state.lastSpawnBudget = 0;
+  spawnBlackArmy();
+}
+// White moves that land on the exit row, from a White piece of every kind
+// parked on row 1, right under the gate.
+function exitMoves() {
+  const board = state.board.map(row => [...row]);
+  board[8][4] = "";
+  ["K", "Q", "R", "B", "N", "P"].forEach((piece, x) => { board[1][x] = piece; });
+  return board[1].flatMap((piece, x) => piece ? legalMovesForPiece(board, piece, x, 1).filter(m => m.y === EXIT_ROW) : []).length;
+}
 
-  const result = await page.evaluate(() => {
-    state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
-    state.board[8][4] = "K";
-    state.floor = NARRATIVE_STAGES.findIndex(s => s.label === "The Knight") + 1;
-    state.lastSpawnBudget = 0;
-    spawnBlackArmy();
+for (const [label, boss] of [["The Knight", "n"], ["Two Bishops", "b"]]) {
+  test(`${label}: the gate seals the whole exit row, leaves White's own start open, and drops once the boss is captured`, async ({ page }) => {
+    const result = await page.evaluate(([spawnSrc, exitSrc, label, boss]) => {
+      const spawnBossStage = eval("(" + spawnSrc + ")"), exitMoves = eval("(" + exitSrc + ")");
+      spawnBossStage(label);
+      const stage = NARRATIVE_STAGES[state.floor - 1];
+      const before = {
+        wallRow: stage.wallRow,
+        bossPiece: stage.bossPiece,
+        exitAllWall: state.board[EXIT_ROW].every(c => c === "#"),
+        wallsElsewhere: state.board.slice(1).flat().filter(c => c === "#").length,
+        exitMoves: exitMoves(),
+        // The whole carried army can walk into the arena: every pawn on row 7 has a move.
+        pawnsFree: state.board[7].every((c, x) => c !== "P" || legalMovesForPiece(state.board, "P", x, 7).length > 0),
+      };
 
-    const wallRow = NARRATIVE_STAGES[state.floor - 1].wallRow;
-    const beforeCells = [...state.board[wallRow]];
-    const beforeHasGap = beforeCells.some(c => c === "");
-    const beforeHasWall = beforeCells.some(c => c === "#");
-
-    // Simulate the Knight's capture directly (bypassing move legality/AI
-    // reply, which aren't this test's concern) to isolate the wall-drop rule.
-    for (let y = 0; y < state.board.length; y++) {
-      const x = state.board[y].indexOf("n");
-      if (x !== -1) { state.captured += "n"; state.board[y][x] = ""; break; }
-    }
-    dropWallIfBossDefeated();
-    const afterCells = [...state.board[wallRow]];
-
-    return { beforeHasGap, beforeHasWall, afterAllOpen: afterCells.every(c => c === "") };
-  });
-
-  expect(result.beforeHasWall).toBe(true);
-  expect(result.beforeHasGap).toBe(true); // never a full-width, unpassable block
-  expect(result.afterAllOpen).toBe(true);
-});
-
-// Guardrail against #120's literal ask ("fence/wall tiles should gate the
-// back rank until knight capture"): a full-width wall (gap=0) is not a
-// harder version of the same mechanic, it's a dead end. Full proof in
-// hf7y/chezz#141's PR description (research/balance/README.md points here
-// too -- the write-up isn't its own dated file because the prose ratchet
-// had no room for one and this account's vault access is closed, #742).
-// Summary: White's own pieces start behind wallRow and have no jump move,
-// so closing the permanent gap traps them on rows 7-8 for good, for any
-// pawn count; the Black Knight, having no king of its own to protect and
-// nothing to gain, simply never has to cross into capture range. If a
-// future change narrows or removes this gap, this test should fail and
-// point here before that ships.
-test("closing The Knight stage's wall gap entirely would trap White behind it forever, for any pawn count", async ({ page }) => {
-  const result = await page.evaluate(() => {
-    state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
-    for (let x = 0; x < BOARD_COLS; x++) state.board[6][x] = "#"; // solid wall, no gap
-    state.board[8][4] = "K";
-    for (let x = 0; x < BOARD_COLS; x++) { if (x !== 4) state.board[7][x] = "P"; } // max plausible carried pawns
-    let anyCrossed = false;
-    for (let y = 7; y <= 8; y++) {
-      for (let x = 0; x < BOARD_COLS; x++) {
-        const piece = state.board[y][x];
-        if (!piece) continue;
-        if (legalMovesForPiece(state.board, piece, x, y).some(m => m.y <= 5)) anyCrossed = true;
+      // Simulate the captures directly (bypassing move legality/AI reply,
+      // which aren't this test's concern) to isolate the wall-drop rule.
+      const stillWallAfterEach = [];
+      while (state.board.some(row => row.includes(boss))) {
+        const y = state.board.findIndex(row => row.includes(boss));
+        state.board[y][state.board[y].indexOf(boss)] = "";
+        dropWallIfBossDefeated();
+        stillWallAfterEach.push(state.board[EXIT_ROW].includes("#"));
       }
-    }
+      return { before, stillWallAfterEach, afterAllOpen: state.board[EXIT_ROW].every(c => c === ""), afterExitMoves: exitMoves() };
+    }, [spawnBossStage.toString(), exitMoves.toString(), label, boss]);
 
-    // The Knight, meanwhile, pays no such cost -- it can jump straight over
-    // the same solid row, because a jump only checks its landing square.
-    state.board[5][3] = "n";
-    const knightCanEnter = legalMovesForPiece(state.board, "n", 3, 5).some(m => m.y >= 7);
-
-    return { anyCrossed, knightCanEnter };
+    expect(result.before.wallRow).toBe(0);
+    expect(result.before.bossPiece).toBe(boss);
+    expect(result.before.exitAllWall).toBe(true);   // no gap
+    expect(result.before.wallsElsewhere).toBe(0);   // nothing left at row 6
+    expect(result.before.exitMoves).toBe(0);        // no White piece can step onto the exit
+    expect(result.before.pawnsFree).toBe(true);
+    // Stays up until the LAST boss piece goes (both Bishops, not just one).
+    expect(result.stillWallAfterEach).toEqual(boss === "b" ? [true, false] : [false]);
+    expect(result.afterAllOpen).toBe(true);
+    expect(result.afterExitMoves).toBeGreaterThan(0);
   });
+}
 
-  expect(result.anyCrossed).toBe(false);
-  expect(result.knightCanEnter).toBe(true);
-});
-
-test("Two Bishops' wall stays up until BOTH bishops are captured, not just one", async ({ page }) => {
-  const stage = await page.evaluate(() => NARRATIVE_STAGES.find(s => s.label === "Two Bishops"));
-  expect(stage.wallRow).toBeTruthy();
-  expect(stage.bossPiece).toBe("b");
-
-  const result = await page.evaluate(() => {
+test("the gate really gates: a King under it can't clear the floor until a real capture of the Knight opens it", async ({ page }) => {
+  const result = await page.evaluate(async () => {
     state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
-    state.board[8][4] = "K";
-    state.floor = NARRATIVE_STAGES.findIndex(s => s.label === "Two Bishops") + 1;
-    state.lastSpawnBudget = 0;
-    spawnBlackArmy();
-
-    const wallRow = NARRATIVE_STAGES[state.floor - 1].wallRow;
-    const beforeHasWall = state.board[wallRow].some(c => c === "#");
-
-    // Capture only the first bishop found -- the wall must stay up.
-    for (let y = 0; y < state.board.length; y++) {
-      const bx = state.board[y].indexOf("b");
-      if (bx !== -1) { state.board[y][bx] = ""; break; }
-    }
-    dropWallIfBossDefeated();
-    const afterOneStillWall = state.board[wallRow].some(c => c === "#");
-
-    // Now capture the second (and last) bishop -- the wall should drop.
-    for (let y = 0; y < state.board.length; y++) {
-      const bx = state.board[y].indexOf("b");
-      if (bx !== -1) { state.board[y][bx] = ""; break; }
-    }
-    dropWallIfBossDefeated();
-    const afterBothAllOpen = state.board[wallRow].every(c => c === "");
-
-    return { beforeHasWall, afterOneStillWall, afterBothAllOpen };
+    state.board[0].fill("#");
+    state.board[1][0] = "K";
+    state.board[5][7] = "R";
+    state.board[5][3] = "n"; // on the Rook's rank
+    state.floor = NARRATIVE_STAGES.findIndex(s => s.label === "The Knight") + 1;
+    state.spawned = true;
+    state.turn = "w";
+    const kingExitsBefore = legalMovesFrom(state.board, 0, 1).filter(m => m.y === EXIT_ROW).length;
+    checkFloorProgression();
+    const floorBefore = state.floor;
+    await makeMove(7, 5, 3, 5); // Rook takes the Knight
+    const openAfter = state.board[EXIT_ROW].every(c => c === "");
+    await makeMove(0, 1, 0, 0); // King steps through
+    return { kingExitsBefore, floorBefore, openAfter, floorAfter: state.floor };
   });
 
-  expect(result.beforeHasWall).toBe(true);
-  expect(result.afterOneStillWall).toBe(true);
-  expect(result.afterBothAllOpen).toBe(true);
+  expect(result.kingExitsBefore).toBe(0);
+  expect(result.floorBefore).toBe(4);
+  expect(result.openAfter).toBe(true);
+  expect(result.floorAfter).toBe(5);
 });
 
 test("terrain actually PAINTS differently from an empty square, on both checkerboard colors", async ({ page }) => {
