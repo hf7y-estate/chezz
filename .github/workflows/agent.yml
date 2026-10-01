@@ -46,10 +46,6 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      - name: Record starting commit
-        id: before
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
       - name: "Work the backlog on the estate's OAuth token, not a repo API key (chezz#41 deleted this runner for a dead ANTHROPIC_API_KEY)"
         uses: anthropics/claude-code-action@v1
         with:
@@ -95,14 +91,3 @@ jobs:
               echo "$branch@$sha already has $runs check run(s), leaving it alone"
             fi
           done
-
-      - name: Trigger a Pages redeploy if this run pushed new commits
-        run: |
-          after=$(git ls-remote origin -h refs/heads/main | cut -f1)
-          if [ "$after" != "${{ steps.before.outputs.sha }}" ]; then
-            gh workflow run deploy-narrative-pages.yml --ref main
-          else
-            echo "No new commits from this run -- skipping redeploy."
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}

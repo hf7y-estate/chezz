@@ -1,11 +1,9 @@
 # Chezz
 
 A daily-seeded roguelike built on chess rules. Live at
-https://hf7y.com/chezz/ (GitHub Pages custom domain -- **broken as of
-2026-09-25**, see the note below; `https://hf7y-estate.github.io/chezz/`
-and `https://chezz.hf7y.com/` both still serve the current build
-meanwhile). Full context lives in a few specific files, not here -- read
-them, don't duplicate them:
+https://chezz.hf7y.com/ (Netlify; the only host -- GitHub Pages was dropped
+2026-10-01, see `DESIGN-NOTES.md`). Full context lives in a few specific
+files, not here -- read them, don't duplicate them:
 
 - **Open GitHub issues on `hf7y-estate/chezz`** -- what's in scope right now.
   They are the backlog and the priority queue; there is no file channel.
@@ -31,10 +29,7 @@ them, don't duplicate them:
   compiles to a GraphQL *search* query with a literal `repo:` string that
   does **not** follow rename redirects -- every label-filtered query
   against the old name silently returned zero rows, which is what made
-  `npm run check-answers` blind tonight. It also wiped this repo's GitHub
-  Pages custom domain (`hf7y.com`), breaking the live URL above -- see
-  #145, filed with the diagnosis and why it needs a human (org-admin
-  Pages scope this account's token doesn't have). References below now
+  `npm run check-answers` blind tonight. References below now
   use `hf7y-estate/chezz`; historical `hf7y/chezz#N` issue citations were
   left as-is since GitHub still resolves them.
 - `.claude/commands/bug-sweep.md`, `nightly-batch.md`, `ideate.md` -- the

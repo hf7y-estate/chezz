@@ -1,5 +1,5 @@
 /* Covers scripts/check-live-deploy.mjs -- the domain-serving check: does a
- * player actually reach nightly-builds/ through every live domain right now.
+ * player actually reach the game on the live domain right now.
  *
  * Only checkDomain() is pinned here, via a fake fetch -- it's the part with
  * no side effects and a clear contract (status code in, ok/detail out). The
@@ -13,12 +13,9 @@
 import { test, expect } from "@playwright/test";
 import {
   checkDomain,
-  checkRedirectsToCanonical,
   checkClassicReportUrl,
   DOMAINS,
   GAME_PATHS,
-  NARRATIVE_REDIRECT_PATHS,
-  NETLIFY_CANONICAL_URL,
   REPORT_ENDPOINT,
   CLASSIC_PAGES,
 } from "../scripts/check-live-deploy.mjs";
@@ -43,20 +40,12 @@ test("a network error (fetch throws) is reported not-ok, not an uncaught excepti
   expect(result.detail).toContain("ENOTFOUND");
 });
 
-test("every live domain is wired into the check, and the retired one is not", () => {
-  const names = DOMAINS.map((d) => d.name);
-  expect(names).toContain("hf7y.com");
-  expect(names).toContain("hf7y.github.io");
-  expect(names).not.toContain("zach.audio");
-  for (const d of DOMAINS) {
-    expect(d.url).toContain("/nightly-builds/");
-  }
-});
-
-test("both Narrative and Classic public routes are checked after every deploy", () => {
-  const routes = Object.fromEntries(GAME_PATHS.map((path) => [path.name, path.url]));
-  expect(routes["hf7y.com narrative"]).toBe("https://hf7y.com/chezz/");
-  expect(routes["hf7y.com classic"]).toBe("https://hf7y.com/chezz/classic.html");
+test("every route checked is on the Netlify domain -- Pages is gone (#145)", () => {
+  const urls = [...DOMAINS, ...GAME_PATHS, ...CLASSIC_PAGES, REPORT_ENDPOINT].map((d) => d.url);
+  expect(urls).toContain("https://chezz.hf7y.com/");
+  expect(urls).toContain("https://chezz.hf7y.com/nightly-builds/");
+  expect(urls).toContain("https://chezz.hf7y.com/classic.html");
+  for (const url of urls) expect(url.startsWith("https://chezz.hf7y.com/")).toBe(true);
 });
 
 // hf7y/chezz#128: the report box posts to a relative /.netlify/functions/report,
@@ -65,41 +54,6 @@ test("the report endpoint is checked against the canonical Netlify domain", () =
   expect(REPORT_ENDPOINT.url).toBe(
     "https://chezz.hf7y.com/.netlify/functions/report?scope=sweep-status"
   );
-});
-
-test("a page whose body names the canonical URL passes the redirect check", async () => {
-  const fakeFetch = async () => ({
-    status: 200,
-    text: async () => `<meta http-equiv="refresh" content="0; url=${NETLIFY_CANONICAL_URL}">`,
-  });
-  const result = await checkRedirectsToCanonical({ name: "example", url: "https://example.test/" }, fakeFetch);
-  expect(result.ok).toBe(true);
-});
-
-test("a page that serves real content instead of a redirect fails loud (#128)", async () => {
-  const fakeFetch = async () => ({ status: 200, text: async () => "<title>Chezz</title>" });
-  const result = await checkRedirectsToCanonical({ name: "example", url: "https://example.test/" }, fakeFetch);
-  expect(result.ok).toBe(false);
-  expect(result.detail).toContain(NETLIFY_CANONICAL_URL);
-});
-
-test("a non-200 response fails the redirect check too", async () => {
-  const fakeFetch = async () => ({ status: 404, text: async () => "" });
-  const result = await checkRedirectsToCanonical({ name: "example", url: "https://example.test/" }, fakeFetch);
-  expect(result.ok).toBe(false);
-  expect(result.detail).toContain("404");
-});
-
-test("both non-canonical Narrative routes are checked, not just one", () => {
-  const names = NARRATIVE_REDIRECT_PATHS.map((p) => p.name);
-  expect(names).toContain("hf7y.com narrative redirect");
-  expect(names).toContain("hf7y.github.io narrative redirect");
-});
-
-test("classic is checked on both origins it's fully served from", () => {
-  const names = CLASSIC_PAGES.map((p) => p.name);
-  expect(names).toContain("hf7y.com classic");
-  expect(names).toContain("chezz.hf7y.com classic");
 });
 
 test("checkClassicReportUrl: a page naming the Netlify function is ok", async () => {
