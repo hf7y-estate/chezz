@@ -2,8 +2,8 @@
 description: Nightly thorough pass -- feature work, redesigns, refactors too big for the bug sweeper, scoped by the open GitHub issues
 ---
 
-Read the open GitHub issues on `hf7y/chezz` first (`gh issue list --repo
-hf7y/chezz --state open`). Everything below is scoped BY that list --
+Read the open GitHub issues on `hf7y-estate/chezz` first (`gh issue list --repo
+hf7y-estate/chezz --state open`). Everything below is scoped BY that list --
 if an accumulated idea in the tracker or backlog is not in service of the
 current focus, write it up in the report as deferred; do not implement it
 just because it is easy or already sitting there.
@@ -11,7 +11,7 @@ just because it is easy or already sitting there.
 This command is designed to run unattended overnight, with no human
 review step until the morning. When something needs a human call, defer
 it with a clear note in the report AND file it as a `question`-labelled
-GitHub issue on `hf7y/chezz` (see step 1 and step 5) rather than guessing.
+GitHub issue on `hf7y-estate/chezz` (see step 1 and step 5) rather than guessing.
 There is no file channel; the issue tracker is the only one.
 
 ## 1. Orient
@@ -22,7 +22,7 @@ and the open issue list. If the previous nightly run left work in progress
 rather than starting over. Also fetch the full tracker backlog --
 
 ```
-gh issue list --repo hf7y/chezz --label player-report --state all \
+gh issue list --repo hf7y-estate/chezz --label player-report --state all \
   --json number,state,title,labels,createdAt --limit 200
 ```
 
@@ -38,7 +38,7 @@ tonight." If this check fails, fix the channel first; a reply you never
 saw is indistinguishable from one he never wrote.
 
 **Read the answered questions from GitHub issues and process them.**
-Chezz's questions are `question`-labelled issues on `hf7y/chezz`. There is
+Chezz's questions are `question`-labelled issues on `hf7y-estate/chezz`. There is
 no file channel and no on-disk copy of question state — that is the point,
 since every copy this project kept went stale. Zach answers by
 commenting on the issue and LEAVING IT OPEN. There is no `answered` label —
@@ -47,7 +47,7 @@ carries a comment from `hf7y` that is not agent-stamped**, whatever its
 labels and whatever its state. Read them across ALL states:
 
 ```
-gh issue list --repo hf7y/chezz --label question --state all --limit 200 \
+gh issue list --repo hf7y-estate/chezz --label question --state all --limit 200 \
   --json number,state,title,body,labels,comments
 ```
 
@@ -85,8 +85,8 @@ a failure — it lives in `realisateur`'s verb build, which the GitHub
 Actions runner's fresh checkout won't have:
 
 ```
-command -v decision-rot >/dev/null 2>&1 && decision-rot hf7y/chezz \
-  || /usr/local/libexec/selfdev/decision-rot.sh hf7y/chezz 2>/dev/null \
+command -v decision-rot >/dev/null 2>&1 && decision-rot hf7y-estate/chezz \
+  || /usr/local/libexec/selfdev/decision-rot.sh hf7y-estate/chezz 2>/dev/null \
   || echo "decision-rot: not available in this environment, skipping"
 ```
 
@@ -102,7 +102,7 @@ Per autopilot mode (confirmed 2026-07-17): fetch the feature backlog,
 oldest first --
 
 ```
-gh issue list --repo hf7y/chezz --label player-report --label idea --state open \
+gh issue list --repo hf7y-estate/chezz --label player-report --label idea --state open \
   --json number,title,body,createdAt --limit 100
 ```
 
@@ -118,10 +118,10 @@ reports (a report is a GitHub issue now, `player-report` + `bug`/`idea`
 labels -- see that file's step 5 for the full set):
 
 ```
-gh issue close <N> --repo hf7y/chezz --comment "Shipped in <hash>: <one-line summary>"
+gh issue close <N> --repo hf7y-estate/chezz --comment "Shipped in <hash>: <one-line summary>"
 ```
 
-For anything deferred, `gh issue comment <N> --repo hf7y/chezz --body
+For anything deferred, `gh issue comment <N> --repo hf7y-estate/chezz --body
 "<why deferred>"` and leave it open -- or leave it as-is and just explain
 why in the report (skipped as duplicate/mis-filed). Commit as you
 complete each feature, not all in one giant commit at the end. Once the
@@ -151,7 +151,7 @@ later restored a second, uncoordinated one (`.github/workflows/agent.yml`,
 daily 09:00 UTC). Check for an open PR or recent branch first. Either way,
 nothing else reads the player-report tracker -- unfetched here is unseen.
 
-Fetch `gh issue list --repo hf7y/chezz --label player-report --label bug
+Fetch `gh issue list --repo hf7y-estate/chezz --label player-report --label bug
 --state open --json number,title,body,comments --limit 100` and triage
 every report through `/bug-sweep`'s step 2 buckets, then implement, note,
 or reclassify it by that command's steps 3 and 5 -- it is still the
@@ -186,7 +186,7 @@ not just the report:
 SCHEDULER_ASK_VIA="nightly" scheduler ask chezz "<the question, in full, one line>"
 ```
 
-That opens a `question`-labelled GitHub issue on `hf7y/chezz` and stamps the
+That opens a `question`-labelled GitHub issue on `hf7y-estate/chezz` and stamps the
 id/date/provenance for you. Pass the question text ONLY — putting the date
 or provenance first is what made ten different questions render as ten
 near-identical stubs, which is why the stamping is done by the tool and not
@@ -195,7 +195,7 @@ enough. The report should point at the issue number, not duplicate its full text
 Don't manufacture a question just to have an entry — a quiet night adds
 nothing here.
 
-Note `hf7y/chezz` is a PUBLIC repo, so questions and answers are
+Note `hf7y-estate/chezz` is a PUBLIC repo, so questions and answers are
 world-readable. Don't put anything private in one.
 
 ## 6. Before finishing

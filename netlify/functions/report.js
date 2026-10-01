@@ -2,7 +2,13 @@
 // leaderboard/Code.gs, hf7y/chezz#83). GITHUB_ISSUE_TOKEN lives only in
 // Netlify's env, never echoed; reads proxy through here too (5000/hour vs. 60).
 
-const REPO = "hf7y/chezz";
+// 2026-09-25: repo moved hf7y/chezz -> hf7y-estate/chezz (realisateur#672).
+// GitHub 301s REST requests for the old name, and `fetch` downgrades a
+// redirected POST to GET per the WHATWG spec -- so every report submission
+// (`method: "POST"` below) was silently turning into a GET that listed
+// issues instead of filing one, while still returning `res.ok` true. Reads
+// (GET) kept working, which is why this stayed quiet.
+const REPO = "hf7y-estate/chezz";
 const LABEL = "player-report";
 const API = "https://api.github.com";
 

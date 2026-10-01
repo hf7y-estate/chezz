@@ -1,13 +1,16 @@
 # Chezz
 
 A daily-seeded roguelike built on chess rules. Live at
-https://hf7y.github.io/chezz/. Full context lives in a few specific
-files, not here -- read them, don't duplicate them:
+https://hf7y.com/chezz/ (GitHub Pages custom domain -- **broken as of
+2026-09-25**, see the note below; `https://hf7y-estate.github.io/chezz/`
+and `https://chezz.hf7y.com/` both still serve the current build
+meanwhile). Full context lives in a few specific files, not here -- read
+them, don't duplicate them:
 
-- **Open GitHub issues on `hf7y/chezz`** -- what's in scope right now.
+- **Open GitHub issues on `hf7y-estate/chezz`** -- what's in scope right now.
   They are the backlog and the priority queue; there is no file channel.
 - `DESIGN-NOTES.md` -- the durable vision/decision record.
-- **GitHub issues on `hf7y/chezz`, label `question`** -- open questions
+- **GitHub issues on `hf7y-estate/chezz`, label `question`** -- open questions
   awaiting a human answer. File one with `scheduler ask chezz "<question>"`;
   Zach answers by **commenting and leaving the issue OPEN** — no label, no
   close. Nothing applies an `answered` label and he does not want to; state
@@ -21,6 +24,19 @@ files, not here -- read them, don't duplicate them:
   went stale on every push and silently ate two of Zach's replies. The
   retired coordination files were deleted 2026-08-15 (realisateur#293);
   their history is in git, not on disk.
+- **The repo moved from the `hf7y` user account to the `hf7y-estate` org**
+  2026-09-25 (realisateur#672, estate-wide). Direct API/CLI object lookups
+  (`gh api repos/hf7y/chezz/...`, plain `gh issue list --repo hf7y/chezz`)
+  still follow GitHub's rename redirect, but `gh issue list --label ...`
+  compiles to a GraphQL *search* query with a literal `repo:` string that
+  does **not** follow rename redirects -- every label-filtered query
+  against the old name silently returned zero rows, which is what made
+  `npm run check-answers` blind tonight. It also wiped this repo's GitHub
+  Pages custom domain (`hf7y.com`), breaking the live URL above -- see
+  #145, filed with the diagnosis and why it needs a human (org-admin
+  Pages scope this account's token doesn't have). References below now
+  use `hf7y-estate/chezz`; historical `hf7y/chezz#N` issue citations were
+  left as-is since GitHub still resolves them.
 - `.claude/commands/bug-sweep.md`, `nightly-batch.md`, `ideate.md` -- the
   three standing modes this project runs in (fast mechanical fixes,
   unattended feature implementation, interactive triage/vision).
@@ -54,13 +70,13 @@ does not license skipping review of what goes into a commit, only the
 push/merge step. Read it:
 
 ```
-gh api repos/hf7y/chezz/branches/main/protection \
+gh api repos/hf7y-estate/chezz/branches/main/protection \
   --jq '{admins: .enforce_admins.enabled, checks: .required_status_checks.contexts}'
 ```
 
 That call 403s for this account ("Resource not accessible by integration") --
 this account can't read branch protection directly. What the repo's own
-ruleset (`gh api repos/hf7y/chezz/rulesets/<id>`, readable) shows as required
+ruleset (`gh api repos/hf7y-estate/chezz/rulesets/<id>`, readable) shows as required
 is just `gate`; a `mergePullRequest` GraphQL attempt against an actually-blocked
 PR reports the real count, e.g. "2 of 3 required status checks are expected" --
 the other two (at least `prose / prose`, estate-wide per #68) live in an
@@ -71,7 +87,7 @@ completing) -- a repo/org Actions setting outside this account's reach, not
 a code problem. A `workflow_dispatch` run on the same branch can go green
 independently, but it does NOT satisfy the stuck check -- branch protection
 is still waiting on that specific `pull_request`-triggered run. The fix is
-`gh api -X POST repos/hf7y/chezz/actions/runs/<the stuck pull_request-event run's id>/rerun`
+`gh api -X POST repos/hf7y-estate/chezz/actions/runs/<the stuck pull_request-event run's id>/rerun`
 (find it with `gh run list --branch <branch> --json databaseId,name,event,conclusion`,
 the one with `"event":"pull_request"` and `"conclusion":"action_required"`) --
 that reruns in place and reports against the ref auto-merge is actually

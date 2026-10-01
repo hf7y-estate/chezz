@@ -55,10 +55,26 @@ import { isAnswered } from "./answered-issues.mjs";
 // the same conf field `scheduler` itself derives it from, so the two cannot
 // disagree; the literal below is only the fallback for a checkout with no
 // scheduler beside it.
-const ISSUES_REPO = process.env.CHEZZ_ISSUES_REPO || "hf7y/chezz";
-// The account whose unstamped comments ARE the answers. Same source as the
-// repo, so the two cannot disagree.
-const OWNER = ISSUES_REPO.split("/")[0];
+//
+// 2026-09-25: the estate moved every repo from the `hf7y` user account to
+// the `hf7y-estate` org (realisateur#672). Direct REST/GraphQL object
+// lookups (and plain `gh issue list`) follow GitHub's rename redirect fine,
+// but `gh issue list --label` compiles to a GraphQL *search* query with a
+// literal `repo:hf7y/chezz` string -- search does not follow rename
+// redirects, so every label-filtered query against the old name silently
+// returned zero rows. That is exactly the failure mode this file exists to
+// catch, and it was the one actually live tonight.
+const ISSUES_REPO = process.env.CHEZZ_ISSUES_REPO || "hf7y-estate/chezz";
+// The account whose unstamped comments ARE the answers -- Zach's own user
+// account, which does NOT move when the repo does. Deriving this from
+// ISSUES_REPO's owner segment was safe only as long as the repo's owner and
+// Zach's account happened to be the same string; the 2026-09-25 org move
+// (hf7y user -> hf7y-estate org, realisateur#672) broke that coincidence.
+// Comments are still authored by the user `hf7y`, never by the org, so this
+// must stay pinned to the user account regardless of which account now owns
+// the repo -- getting this wrong silently turns real answers invisible
+// again, the exact failure class this file exists to catch.
+const OWNER = process.env.CHEZZ_ANSWER_OWNER || "hf7y";
 
 const blind = [];
 

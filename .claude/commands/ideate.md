@@ -28,12 +28,12 @@ turns have passed that the original `/ideate` framing feels distant.
 Pull real, current state before saying anything about status:
 - `git log --oneline -10`, `git status`, and diff local `main` against
   `origin/main` -- sync first if behind, same as any other run.
-- The live tracker -- `gh issue list --repo hf7y/chezz --label
+- The live tracker -- `gh issue list --repo hf7y-estate/chezz --label
   player-report --state all --json number,state,title,labels --limit
   200` (see `netlify/functions/report.js`) -- don't trust a stale count
   from a prior report.
-- `DESIGN-NOTES.md` and the open GitHub issues on `hf7y/chezz` (`gh issue
-  list --repo hf7y/chezz --state open`) -- the existing priority queue and
+- `DESIGN-NOTES.md` and the open GitHub issues on `hf7y-estate/chezz` (`gh issue
+  list --repo hf7y-estate/chezz --state open`) -- the existing priority queue and
   any already-decided direction. Don't re-ask a settled decision.
 - Cross-project state, read-only: whether the account-wide usage/spend
   picture (see prior reports/sweep.log `WARNING`/`spend limit` lines)
@@ -90,7 +90,7 @@ re-confirmed):
   future sessions and nightly-batch need the "why," not just the "what."
   If a decision corrects or refines an earlier entry, say so explicitly
   and mark what changed rather than silently overwriting it.
-- Open or update a GitHub issue on `hf7y/chezz` for each queued item,
+- Open or update a GitHub issue on `hf7y-estate/chezz` for each queued item,
   pointing back at `DESIGN-NOTES.md` for detail -- the open issues ARE the
   priority queue; keep each issue itself short.
 - If a decision needs a follow-up the user (not nightly-batch) must

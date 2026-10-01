@@ -16,7 +16,11 @@
 import { execFileSync } from "node:child_process";
 import { stamped } from "./answered-issues.mjs";
 
-const REPO = process.env.CHEZZ_ISSUES_REPO || "hf7y/chezz";
+// 2026-09-25: repo moved hf7y/chezz -> hf7y-estate/chezz (realisateur#672);
+// the old name still resolves for direct API calls but not for the
+// --label search this file's dedup issue-list relies on (see
+// check-answer-channel.mjs for the full explanation).
+const REPO = process.env.CHEZZ_ISSUES_REPO || "hf7y-estate/chezz";
 const LABEL = "nightly-builds-domain-down";
 // Provenance stamp job id (hf7y/chezz#21). Without it, everything this script
 // posts under the shared `hf7y` token is indistinguishable from a reply Zach

@@ -23,7 +23,7 @@ labelled `player-report` plus `bug` or `idea`, so the fastest path is
 access):
 
 ```
-gh issue list --repo hf7y/chezz --label player-report --label bug --state open \
+gh issue list --repo hf7y-estate/chezz --label player-report --label bug --state open \
   --json number,title,body,createdAt,labels --limit 100
 ```
 
@@ -124,7 +124,7 @@ this repo, not writes through the function.
 For each report you fixed, close it referencing the commit hash:
 
 ```
-gh issue close <N> --repo hf7y/chezz --comment "Fixed in <hash>: <one-line summary>"
+gh issue close <N> --repo hf7y-estate/chezz --comment "Fixed in <hash>: <one-line summary>"
 ```
 
 For a report that's actually a feature idea, reclassify it instead of
@@ -133,15 +133,15 @@ the feature backlog, open, so it doesn't need re-triaging on every future
 sweep:
 
 ```
-gh issue edit <N> --repo hf7y/chezz --remove-label bug --add-label idea
-gh issue comment <N> --repo hf7y/chezz --body "<why this is an idea, not a defect>"
+gh issue edit <N> --repo hf7y-estate/chezz --remove-label bug --add-label idea
+gh issue comment <N> --repo hf7y-estate/chezz --body "<why this is an idea, not a defect>"
 ```
 
 For a genuine bug that needs a human call on the fix itself, comment but
 leave it in the bug queue, open:
 
 ```
-gh issue comment <N> --repo hf7y/chezz --body "Needs: <what a real fix/decision would require>"
+gh issue comment <N> --repo hf7y-estate/chezz --body "Needs: <what a real fix/decision would require>"
 ```
 
 For a genuine bug that's unambiguous but too big for this sweep, same
@@ -150,7 +150,7 @@ backup-work pass recognizes it as a punted implementation task rather than
 a stalled human-call item:
 
 ```
-gh issue comment <N> --repo hf7y/chezz --body "NIGHTLY: <what the real fix needs -- scope, affected functions>"
+gh issue comment <N> --repo hf7y-estate/chezz --body "NIGHTLY: <what the real fix needs -- scope, affected functions>"
 ```
 
 Confirm by re-fetching `gh issue list --label player-report --label bug
@@ -196,10 +196,10 @@ directions" fork — file it with:
 SCHEDULER_ASK_VIA="bug-sweep" scheduler ask chezz "<the question, in full, one line>"
 ```
 
-That opens a `question`-labelled issue on `hf7y/chezz` and stamps the
+That opens a `question`-labelled issue on `hf7y-estate/chezz` and stamps the
 id/date/provenance itself — pass the question text ONLY. Add context as a
 follow-up comment if one line isn't enough. Most sweeps add nothing here —
-don't manufacture a question. `hf7y/chezz` is PUBLIC; nothing private.
+don't manufacture a question. `hf7y-estate/chezz` is PUBLIC; nothing private.
 
 GitHub issues are the question channel, and the backlog. There is no file
 channel: the retired coordination files were deleted 2026-08-15, so a
