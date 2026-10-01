@@ -321,39 +321,11 @@ of stalling silently. Judge every new idea against this bar: required to
 hold it → `active`; past it → `(parked)` (or `(waiting: <dep>)`) with one
 line of why.
 
-## Dispatch and checks (Zach, 2026-10-01)
+## Decided 2026-10-01 (Zach) -- the rulings live on the issues, quoted
 
-Asked how the nightly agent should land work -- (1) let Actions open PRs
-again, (2) park the schedule, (3) move to dexter containers: "Do all 3."
-On who an agent is on GitHub: "Agree. App is standard. And Actions maybe
-gets retired or parked. Who owns actions in the ecosystem anyway? Send your
-code to that proper place, rather than maintaining a handrolled chezz thing.
-And then plan to use the containers model, also ecosystem provisioned."
-
-So: the org setting is flipped (`gh api
-orgs/hf7y-estate/actions/permissions/workflow` reads
-`can_approve_pull_request_reviews: true`), `agent.yml` runs by hand only, and
-the nightly's home is hf7y-estate/realisateur `agent/repos`, which chezz
-joins after one clean hand-run there.
-
-On the estate prose guard: "So retire the prose guard. I think we've
-surpassed it. hf7y/etalon can stay but it should be more flexible. Maybe it
-audits and enforces only when something is judged unhealthy?" `prose.yml`
-and both ratchet files are deleted; `gate` is the one required check.
-
-## Terrain and boss gates (Zach, 2026-10-01; issues #139, #140, #142)
-
-- Every floor, every pawn (#139): "3. But it can be subtle like require
-  taking an enemy piece. So some blocked pawns is okay." Option 3 was "every
-  floor is solvable for every pawn". This replaces the 2026-07-20 reading
-  below that a gate may be narrow enough that pawns cannot follow.
-- Floor 7 (#140): "1 then 2" -- reverify the lone-Rook evasion analytically,
-  then tune the floor harder with terrain and pawns as #123 asks.
-- Boss walls (#142): "Follow up. I think the problem is the gate is on the
-  wrong rank. It should block the move from rank 8 to 9?" `wallRow: 6` sits
-  in front of White's own start; the exit is row 0. The gate belongs on the
-  exit. Default if unanswered by 2026-10-08: it also opens when White is down
-  to a lone King, which provably cannot force the Knight's capture.
+- Dispatch, the Actions agent's retirement, the prose guard: #36.
+- Every floor, every pawn: #139. Floor 7: #140. Boss gates and the draw: #142.
+- This file becoming tests: #150.
 
 ## Standing design rules (migrated off the retired file channel, 2026-08-15)
 

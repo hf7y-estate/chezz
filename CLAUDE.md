@@ -10,11 +10,6 @@ files, not here -- read them, don't duplicate them:
 - `DESIGN-NOTES.md` -- the durable vision/decision record.
 - **GitHub issues on `hf7y-estate/chezz`, label `question`** -- open questions
   awaiting a human answer. File one with `scheduler ask chezz "<question>"`;
-  every question body carries `DEFAULT-AFTER <n>d: <what the next run does if
-  unanswered>` (estate rule since realisateur#680; `0d: block` only for the
-  irreversible). #139, #140 and #142 were filed without one from a runner
-  with no `gh-sign` to refuse them, and sat over a week. Past its window, act
-  on the default and say so on the issue.
   Zach answers by **commenting and leaving the issue OPEN** — no label, no
   close. Nothing applies an `answered` label and he does not want to; state
   and labels carry NO information about whether he answered. An issue is

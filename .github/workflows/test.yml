@@ -83,7 +83,7 @@ jobs:
 
   # Not in gate's needs: it reads the live site, which no PR can change.
   live:
-    if: github.event_name == 'schedule'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
