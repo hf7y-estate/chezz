@@ -1,80 +1,37 @@
-// report.js -- in-game report channel, backed by GitHub Issues (replaces
-// leaderboard/Code.gs, hf7y/chezz#83). The credential lives only in Netlify's
-// env, never echoed; reads proxy through here too (5000/hour vs. 60).
+// report.js -- in-game report channel (replaces leaderboard/Code.gs,
+// hf7y/chezz#83). It holds NO credential. A report is stored here and served
+// back at ?scope=pending; scripts/drain-reports.mjs, run by something that
+// already holds a GitHub token, turns each one into an issue. The org refuses
+// long-lived personal tokens, and Zach ruled 2026-10-01 that credentials stay
+// on dexter, so this function never talks to GitHub with one (#145).
 
-import { createSign } from "node:crypto";
+import { getStore } from "@netlify/blobs";
 
-// 2026-09-25: repo moved hf7y/chezz -> hf7y-estate/chezz (realisateur#672).
-// GitHub 301s REST requests for the old name, and `fetch` downgrades a
-// redirected POST to GET per the WHATWG spec -- so every report submission
-// (`method: "POST"` below) was silently turning into a GET that listed
-// issues instead of filing one, while still returning `res.ok` true.
 const REPO = "hf7y-estate/chezz";
 const LABEL = "player-report";
 const API = "https://api.github.com";
 
 const MAX_DESCRIPTION = 4000;
 const MAX_TITLE = 72;
+const MAX_PENDING = 500; // a public write endpoint must not be an unbounded store
 
-// CORS: this same function is also embedded (absolute URL, hf7y/chezz#128)
-// in classic.html served from hf7y.com/chezz/classic.html, a different
-// origin than chezz.hf7y.com -- without this header the browser fetch
-// there succeeds but the page can never read the response body.
-const json = (body, status = 200) =>
+// The test seam: Netlify Blobs only exists inside Netlify's runtime.
+let store;
+export function useStore(s) { store = s; }
+const reports = () => store || getStore("reports");
+
+// CORS: classic.html posts here by absolute URL (hf7y/chezz#128).
+const json = (body, status = 200, headers = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
+    headers: { "content-type": "application/json", "access-control-allow-origin": "*", ...headers },
   });
 
-function gh(path, token, init = {}) {
-  return fetch(`${API}${path}`, {
-    ...init,
-    headers: {
-      accept: "application/vnd.github+json",
-      "user-agent": "chezz-report-function",
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
-      ...(init.headers || {}),
-    },
-  });
-}
-
-// The estate's GitHub App is the credential (hf7y-estate/realisateur#1365):
-// the org refuses personal tokens that live longer than a year, which is what
-// 403'd GITHUB_ISSUE_TOKEN after the move. The function mints a one-hour
-// installation token that can only write issues on this repo, and reuses it
-// until just before it expires.
-let minted = { token: "", exp: 0 };
-
-async function appToken(appId, key) {
-  if (Date.now() < minted.exp) return minted.token;
-  const now = Math.floor(Date.now() / 1000);
-  const b64 = o => Buffer.from(JSON.stringify(o)).toString("base64url");
-  const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({ iat: now - 60, exp: now + 540, iss: appId })}`;
-  const jwt = `${unsigned}.${createSign("RSA-SHA256").update(unsigned).sign(key.replace(/\\n/g, "\n"), "base64url")}`;
-  const inst = await gh(`/repos/${REPO}/installation`, jwt);
-  if (!inst.ok) return "";
-  const res = await gh(`/app/installations/${(await inst.json()).id}/access_tokens`, jwt, {
-    method: "POST",
-    body: JSON.stringify({ repositories: [REPO.split("/")[1]], permissions: { issues: "write" } }),
-  });
-  if (!res.ok) return "";
-  const { token, expires_at } = await res.json();
-  minted = { token, exp: Date.parse(expires_at) - 300000 };
-  return token;
-}
-
-function issueBody({ name, url, kind, description }) {
-  return [
-    description,
-    "",
-    "---",
-    `- player: \`${name}\``,
-    `- build: ${url}`,
-    `- kind: ${kind}`,
-    "",
-    "_Filed from the in-game report box._",
-  ].join("\n");
-}
+// Unauthenticated reads of a public repo: 60 an hour per address, so every
+// read that reaches GitHub is cached at the edge for five minutes.
+const CACHED = { "cache-control": "public, max-age=300" };
+const gh = path =>
+  fetch(`${API}${path}`, { headers: { accept: "application/vnd.github+json", "user-agent": "chezz-report-function" } });
 
 function toEntry(issue) {
   const kind = issue.labels.some(l => (l.name || l) === "idea") ? "feature" : "bug";
@@ -93,14 +50,7 @@ function toEntry(issue) {
 }
 
 export default async (req) => {
-  const appId = Netlify.env.get("GITHUB_APP_ID");
-  const appKey = Netlify.env.get("GITHUB_APP_KEY");
-  const token = appId && appKey ? await appToken(appId, appKey) : Netlify.env.get("GITHUB_ISSUE_TOKEN");
   const scope = new URL(req.url).searchParams;
-
-  if (!token) {
-    return json({ ok: false, error: "no working GitHub credential on this site" }, 503);
-  }
 
   if (req.method === "POST") {
     let payload;
@@ -116,50 +66,46 @@ export default async (req) => {
       return json({ ok: false, error: "description too long" }, 413);
     }
 
-    // "feature" (not "idea") is the value both narrative's and classic's
-    // report UI actually send from their kind radio/param -- treat it the
-    // same as "idea" instead of silently mislabeling every idea "bug" and
-    // relying on a later triage pass to notice and relabel it (see e.g.
-    // hf7y/chezz#120, #123, #124, each needing a manual bug->idea comment).
+    // "feature" is what both report UIs send for an idea (hf7y/chezz#120).
     const kind = payload.kind === "idea" || payload.kind === "feature" ? "idea" : "bug";
     const name = /^[0-9a-f]{6}$/.test(String(payload.name || "")) ? payload.name : "unknown";
     const build = String(payload.url || "").startsWith("http")
       ? String(payload.url).slice(0, 300)
       : "(not supplied)";
 
-    const firstLine = description.split("\n")[0];
-    const title = firstLine.length > MAX_TITLE
-      ? `${firstLine.slice(0, MAX_TITLE - 1)}…`
-      : firstLine;
+    const { blobs } = await reports().list();
+    if (blobs.length >= MAX_PENDING) return json({ ok: false, error: "report queue is full" }, 503);
 
-    const res = await gh(`/repos/${REPO}/issues`, token, {
-      method: "POST",
-      body: JSON.stringify({
-        title,
-        body: issueBody({ name, url: build, kind, description }),
-        labels: [LABEL, kind],
-      }),
-    });
-
-    if (!res.ok) {
-      // Never surface GitHub's response verbatim; it can name the token.
-      return json({ ok: false, error: `GitHub refused the report (${res.status})` }, 502);
-    }
-    const issue = await res.json();
-    return json({ ok: true, issue: issue.number, url: issue.html_url });
+    const id = crypto.randomUUID();
+    await reports().setJSON(id, { id, at: new Date().toISOString(), kind, name, build, description });
+    return json({ ok: true, queued: id });
   }
 
   if (req.method !== "GET") return json({ ok: false, error: "method not allowed" }, 405);
 
+  // What the drain reads. A report whose id already appears in an issue has
+  // been filed: it is dropped here, which is how the queue empties without
+  // the drain needing any right to delete.
+  if (scope.get("scope") === "pending") {
+    const { blobs } = await reports().list();
+    if (!blobs.length) return json([]);
+    const res = await gh(`/repos/${REPO}/issues?state=all&labels=${LABEL}&per_page=100&sort=created`);
+    if (!res.ok) return json({ ok: false, error: `unreadable (${res.status})` }, 502);
+    const filed = (await res.json()).map(i => i.body || "").join("\n");
+    const pending = [];
+    for (const { key } of blobs) {
+      if (filed.includes(key)) await reports().delete(key);
+      else pending.push(await reports().get(key, { type: "json" }));
+    }
+    return json(pending.filter(Boolean));
+  }
+
   if (scope.get("scope") === "sweep-status") {
-    const res = await gh(
-      `/repos/${REPO}/issues?state=closed&labels=${LABEL}&per_page=100&sort=updated`,
-      token,
-    );
+    const res = await gh(`/repos/${REPO}/issues?state=closed&labels=${LABEL}&per_page=100&sort=updated`);
     if (!res.ok) return json({ ok: false, error: `unreadable (${res.status})` }, 502);
     const closed = (await res.json()).filter(i => !i.pull_request);
-    if (!closed.length) return json({});
-    return json({ timestamp: closed[0].closed_at || closed[0].updated_at, fixed: closed.length });
+    if (!closed.length) return json({}, 200, CACHED);
+    return json({ timestamp: closed[0].closed_at || closed[0].updated_at, fixed: closed.length }, 200, CACHED);
   }
 
   if (scope.get("scope") === "bugs") {
@@ -168,15 +114,12 @@ export default async (req) => {
     const limit = Math.min(Number(scope.get("limit")) || 20, 100);
     const state = want === "all" ? "all" : want === "resolved" ? "closed" : "open";
 
-    const res = await gh(
-      `/repos/${REPO}/issues?state=${state}&labels=${LABEL}&per_page=100&sort=updated`,
-      token,
-    );
+    const res = await gh(`/repos/${REPO}/issues?state=${state}&labels=${LABEL}&per_page=100&sort=updated`);
     if (!res.ok) return json({ ok: false, error: `unreadable (${res.status})` }, 502);
 
     let entries = (await res.json()).filter(i => !i.pull_request).map(toEntry);
     if (type !== "all") entries = entries.filter(e => e.type === type);
-    return json(entries.slice(0, limit));
+    return json(entries.slice(0, limit), 200, CACHED);
   }
 
   return json({ ok: false, error: "unknown scope" }, 400);
