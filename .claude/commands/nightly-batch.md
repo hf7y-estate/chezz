@@ -145,8 +145,6 @@ need widened
 or decided — a decline that only lives in a report is a decline he never
 agreed to.
 
-**Run `npm run drain-reports` before anything else** -- it files what players sent since the last pass (`scripts/drain-reports.mjs`); until it runs they are in a queue, not the tracker.
-
 **Sweep the WHOLE open bug queue, first, before the feature backlog.** #41
 retired the original two dead Actions runners and #57's third was deleted
 2026-10-01; the estate's container pass on dexter is the runner. Check for
