@@ -10,6 +10,11 @@ files, not here -- read them, don't duplicate them:
 - `DESIGN-NOTES.md` -- the durable vision/decision record.
 - **GitHub issues on `hf7y-estate/chezz`, label `question`** -- open questions
   awaiting a human answer. File one with `scheduler ask chezz "<question>"`;
+  every question body carries `DEFAULT-AFTER <n>d: <what the next run does if
+  unanswered>` (estate rule since realisateur#680; `0d: block` only for the
+  irreversible). #139, #140 and #142 were filed without one from a runner
+  with no `gh-sign` to refuse them, and sat over a week. Past its window, act
+  on the default and say so on the issue.
   Zach answers by **commenting and leaving the issue OPEN** — no label, no
   close. Nothing applies an `answered` label and he does not want to; state
   and labels carry NO information about whether he answered. An issue is
@@ -69,25 +74,18 @@ gh api repos/hf7y-estate/chezz/branches/main/protection \
   --jq '{admins: .enforce_admins.enabled, checks: .required_status_checks.contexts}'
 ```
 
-That call 403s for this account ("Resource not accessible by integration") --
-this account can't read branch protection directly. What the repo's own
-ruleset (`gh api repos/hf7y-estate/chezz/rulesets/<id>`, readable) shows as required
-is just `gate`; a `mergePullRequest` GraphQL attempt against an actually-blocked
-PR reports the real count, e.g. "2 of 3 required status checks are expected" --
-the other two (at least `prose / prose`, estate-wide per #68) live in an
-org-level ruleset this account can't list either. Found 2026-09-19: every PR
-opened by this account gets its `pull_request`-triggered `Test` and `prose`
-workflow runs stuck at `action_required` (queued for approval, never
-completing) -- a repo/org Actions setting outside this account's reach, not
-a code problem. A `workflow_dispatch` run on the same branch can go green
-independently, but it does NOT satisfy the stuck check -- branch protection
-is still waiting on that specific `pull_request`-triggered run. The fix is
-`gh api -X POST repos/hf7y-estate/chezz/actions/runs/<the stuck pull_request-event run's id>/rerun`
-(find it with `gh run list --branch <branch> --json databaseId,name,event,conclusion`,
-the one with `"event":"pull_request"` and `"conclusion":"action_required"`) --
-that reruns in place and reports against the ref auto-merge is actually
-watching. Do this for both `Test` and `prose` before assuming a stalled
-auto-merge needs anything else.
+That call 403s for this account. The rules that gate `main` are readable:
+
+```
+gh api repos/hf7y-estate/chezz/rules/branches/main
+```
+
+One required check: `gate`. A PR opened by the Actions bot gets its
+`pull_request`-triggered `Test` run stuck at `action_required`; a
+`workflow_dispatch` run on the same branch does NOT satisfy it. Rerun the
+stuck one in place:
+`gh api -X POST repos/hf7y-estate/chezz/actions/runs/<id>/rerun` (find it with
+`gh run list --branch <branch> --json databaseId,name,event,conclusion`).
 
 ## Ecosystem protocols
 
