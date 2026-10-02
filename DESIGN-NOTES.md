@@ -81,36 +81,11 @@ or re-ask:
    (shares the post-combat/floor-progression surface, wants that flow
    stable first) — not explicitly bundled into the same implementation
    pass, just ordered second.
-   - **Refined 2026-07-20: wall/hole COUNT as an intentional carry-over
-     gate**, tunable per floor's difficulty design, enabling deliberate
-     "dramatic showdown" set-pieces. Worked example from the user: a floor
-     with King + pawns vs. a lone Knight, where the gate is narrow enough
-     that only the King can pass through it — the pawns literally cannot
-     follow, so capturing the Knight before advancing becomes mandatory,
-     not optional. This means terrain isn't purely an obstacle/flavor
-     layer — floor design should treat gate width as a lever alongside
-     material composition when tuning a floor's difficulty curve.
-     **Correction, 2026-09-23 (hf7y/chezz#120, recorded in
-     `research/balance/README.md`'s "a lone King can never force 'The
-     Knight' boss's capture" entry):**
-     "The Knight" stage — the only shipped floor this worked example
-     describes — does not actually implement "mandatory." `wallRow`/
-     `bossPiece`/`dropWallIfBossDefeated` only ever drop the wall once the
-     boss is gone; `checkFloorProgression` clears the floor the instant the
-     King reaches `EXIT_ROW`, with no check that the stage's `bossPiece` is
-     dead, and `newFloor` carries every surviving White piece over by
-     scanning the whole board, not just past the gate — so the King can
-     walk straight to the exit around the Knight, pawns and all, without
-     ever fighting it. That gap turns out to be load-bearing, not just an
-     oversight: the linked research proves a lone King can *never* force a
-     Knight's capture on this board under adversarial evasion (0 of 16
-     King-starts-at-home positions against the Knight's authored square are
-     forced wins; only 11.44% of all King/Knight square-pairs are, and none
-     realistic). Pawns can't fix this — the whole point of the one-wide
-     gate is that they never join the fight. Hard-gating progression on the
-     boss's death, the literal reading of "mandatory," would risk a genuine
-     soft-lock instead. Left open as hf7y/chezz#142 which lever (if any) to
-     pull instead.
+   - The 2026-07-20 "narrow gate, only the King fits through" framing and
+     its 2026-09-23 correction (hf7y/chezz#120 — the gate didn't actually
+     block anything) are both superseded by hf7y-estate/chezz#142's
+     2026-10-01 fix and now live only as history on that issue. Current
+     behaviour is a standing design rule, below.
 3. **Material sufficiency: strengthen the tuning proxy.** Pure
    engineering (deeper search, real king-safety/tactical eval instead of
    material-only), no playtesting asked of the user. This can run as
@@ -345,6 +320,12 @@ files deleted in realisateur#293 (their history is in git). They are decisions, 
   and reasoning in that file's header comment).
 - **Audio + vibration:** pinned by `test/earcons.spec.mjs` (provenance and
   reasoning in that file's header comment, issue #5).
+- **Boss gates:** pinned by `test/terrain.spec.mjs` (the gate seals the
+  whole exit row and drops only once the floor's boss piece is captured)
+  and `test/lone-king.spec.mjs` (a lone King that can never force that
+  capture gets a toggleable ending instead of a soft-lock — fifty-move
+  draw by default; provenance and reasoning in that file's header
+  comment, issue #142).
 
 ## Difficulty theory: analytic material sufficiency (answered 2026-08-16, issue #6)
 
