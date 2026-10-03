@@ -90,11 +90,27 @@ command -v decision-rot >/dev/null 2>&1 && decision-rot hf7y-estate/chezz \
   || echo "decision-rot: not available in this environment, skipping"
 ```
 
-## 2. Re-verify anything a previous run touched, from scratch
+## 2. Re-verify anything a previous run touched -- don't re-run everything every night
 
-Do not trust a prior run's own claims about what works -- run `npm run
-check` (syntax + size + full Playwright suite) and confirm independently
-before building further on top of it.
+If `git log --oneline -10` and the last report show a clean `origin/main`
+with nothing left mid-flight, don't open tonight by re-running the full
+suite: every commit that landed on `main` already passed CI's `gate` job
+(the full suite, sharded across 3 runners) to get there, so re-proving it
+again here is the same suite a second time for no new information.
+`npm run check-syntax && npm run check-size` are seconds, cheap enough to
+run anyway as a sanity check. Only reach for a full `npm run check` if
+you're picking up uncommitted or unmerged work a previous run left behind
+and genuinely need to confirm its claimed state independently rather than
+trust it -- that is what "do not trust a prior run's own claims" is
+actually guarding against, not a nightly ritual.
+
+Either way, once you start changing something, iterate against the spec
+file(s) that cover it (`npx playwright test test/<name>.spec.mjs`), not
+the whole suite -- the pre-commit hook runs the full suite once more,
+automatically, the moment you commit, and CI's `gate` runs it again,
+sharded, on every PR. Running the whole thing by hand on top of those is
+exactly the turn-burning pattern hf7y-estate/chezz#156 named: "ran the
+Playwright suite, whole or in part, again and again while iterating."
 
 ## 3. Work the feature backlog first, then backup work
 

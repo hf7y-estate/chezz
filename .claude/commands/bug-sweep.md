@@ -93,8 +93,17 @@ which is where feature implementation actually happens.
   fix, confirm the new test fails, then reapply the fix and confirm it
   passes. A test that passes both with and without the fix isn't proving
   anything — don't skip this step.
-- Run `npm run check` (syntax + size + full Playwright suite). All tests
-  must pass; the pre-commit hook will enforce this again anyway.
+- Run `npm run check-syntax && npm run check-size` (seconds) plus just the
+  spec file(s) covering this fix, e.g. `npx playwright test
+  test/<name>.spec.mjs` -- not the whole suite by hand. The full suite
+  already runs twice downstream of this step: once locally, automatically,
+  the moment you commit (the pre-commit hook, unless only docs/`.claude/`
+  files are staged), and again, sharded across 3 runners, in CI's `gate`
+  job on every PR. Running it yourself here on top of those just pays for
+  a third pass of the same ~3+ minute suite for no new information
+  (hf7y-estate/chezz#156 -- a pass that re-runs the whole suite while
+  iterating is spending its turns being the test runner instead of the
+  fixer).
 
 ## 4. Commit, branch, PR
 
