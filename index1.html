@@ -1579,6 +1579,14 @@
     if (state.diedOnce) params.set("died", "1");
     if (state.loneKing) params.set("loneking", state.loneKing);
     if (state.captured) params.set("captured", state.captured);
+    // Boss-standoff counters (resolveBossStandoff) ride the URL too, same as
+    // everything else above -- otherwise a reload mid-standoff (closing the
+    // tab, a mobile browser reclaiming the page, or just revisiting a shared
+    // link) silently zeroes the FIFTY_MOVE_LIMIT countdown and the standoff
+    // that counter exists to end becomes unending again across sessions,
+    // even though resolveBossStandoff itself was never touched.
+    if (state.quietMoves) params.set("quietMoves", state.quietMoves);
+    if (state.loneKingMoves) params.set("loneKingMoves", state.loneKingMoves);
     if (state.moveLog.length) params.set("last", state.moveLog.join(","));
     const url = "?" + params.toString();
     if (push) history.pushState(null, "", url);
@@ -2992,6 +3000,8 @@
     state.maxRank = parseInt(params.get("maxRank") || "0");
     state.diedOnce = params.get("died") === "1";
     state.loneKing = params.get("loneking") || "";
+    state.quietMoves = parseInt(params.get("quietMoves") || "0");
+    state.loneKingMoves = parseInt(params.get("loneKingMoves") || "0");
     document.querySelectorAll("#loneKingRule input").forEach(i => i.checked = i.value === loneKingRule());
     // Rides the URL like everything else, so back/forward rewinds the move
     // context along with the position instead of leaving a stale trail.
