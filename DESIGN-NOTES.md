@@ -120,25 +120,14 @@ list nightly-batch should start executing against.
   - `index1.html` — `pieceGlyphHtml` renders a sprite when one exists and
     the Unicode glyph when one doesn't, **per piece**.
 
-  **Three decisions worth not re-litigating:**
-  - *Zero new dependencies.* vkv-inventory's version needs Python +
-    `google-genai` + Pillow + numpy. Chezz is a Node repo with no Python,
-    and Playwright (already a devDependency, since `npm test` is Playwright)
-    ships a browser whose `<canvas>` does every pixel operation Pillow was
-    doing. So the port is a rewrite, not a copy — same pipeline shape, none
-    of the install footprint.
-  - *Monochrome is enforced by the pipeline, not by the prompt.* The palette
-    snap means a sprite CANNOT come back off-palette even if the model
-    ignores the instruction. The monochrome constraint is a standing human
-    decision; leaving it to prompt compliance would have made it a
-    coin-flip.
-  - *Sprites are baked in, and `PIECE_SPRITES` ships empty.* Data URIs keep
-    chezz a single self-contained HTML file (what makes the share links, the
-    `file://` test harness and the Pages deploy work with no build step).
-    Empty-by-default means the committed game is byte-for-byte the glyph
-    game it was, and generation is a deliberate manual step — never a side
-    effect of `npm run check` or a nightly run, since each run costs money
-    and returns different art.
+  **Three decisions worth not re-litigating**, each pinned by a test:
+  - *Zero new dependencies*, and *generation is a deliberate manual step*:
+    `test/sprite-pipeline-decisions.spec.mjs`.
+  - *Monochrome is enforced by the pipeline, not by the prompt*:
+    `test/sprite-postprocess.spec.mjs` ("every opaque pixel snaps to the
+    game's monochrome ramp").
+  - *Sprites are baked in as data URIs*: `test/piece-sprites.spec.mjs`
+    ("every piece in PIECE_SPRITES is a real sprite").
 
   **The partial sprite set is the designed, tested state, not a blocked
   pipeline** (corrected per #95; standing answer Zach, in #32: asked to
