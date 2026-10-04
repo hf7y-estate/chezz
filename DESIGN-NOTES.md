@@ -280,9 +280,13 @@ files deleted in realisateur#293 (their history is in git). They are decisions, 
   lone-boss stages are never capturable on move 1 by a plausible carried
   army" (provenance and reasoning in that test's own comment).
 - **Colour scheme is monochrome** — an explicit, repeated human ask. Do not
-  reintroduce a saturated or hued palette without a fresh one. (No test
-  pins this yet — it's a UI-wide property, not covered by the sprite-palette
-  check in `test/sprite-postprocess.spec.mjs`.)
+  reintroduce a saturated or hued palette without a fresh one. Pinned by
+  `test/monochrome-palette.spec.mjs`: every color literal in index1.html's
+  `<style>` block must be grayscale except the documented signal colors
+  (the green/amber/red legal-move threat dots, the red check glow, and the
+  white-move-hint star's gold — all already called out as exempt by the
+  stylesheet's own comments, except the star, which the test is the first
+  thing to name explicitly).
 - **Move-into-check:** pinned by `test/move-into-check.spec.mjs` (provenance
   and reasoning in that file's header comment).
 - **Audio + vibration:** pinned by `test/earcons.spec.mjs` (provenance and
