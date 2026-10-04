@@ -38,43 +38,10 @@ Four vision questions, asked directly, answered directly — recording the
 decision and reasoning so a later autonomous run doesn't have to re-derive
 or re-ask:
 
-1. **Auto-march — REFINED 2026-07-20, later same session; this supersedes
-   the "King auto-marches on its own after level clear" framing below.**
-   The King does **not** start marching automatically on level clear.
-   Instead, the interaction model is drag-driven and generalizes to every
-   piece, not just the King:
-   - **Click-and-drag stepping**: dragging a piece auto-steps it one
-     square at a time in the dragged direction, rather than requiring a
-     precise drop on the destination square. For the King this is the
-     whole mechanic — no separate "auto-march mode" exists, it's just how
-     dragging the King already works.
-   - **Formation-follow is an emergent consequence, not a separate
-     system**: once the King can be stepped this way, surviving pieces
-     naturally "rank up" alongside it. For now, formation logic is naive —
-     strongest pieces closest to the King — with the explicit long-term
-     goal of custom-tuned positioning so the end formation resembles a
-     classic chess back-rank arrangement. Don't over-invest in the tuning
-     the first time; ship the naive version, leave it improvable.
-   - **Generalizes to other pieces (e.g. Knight)**: the same drag-to-step
-     interaction should work for any piece — on drag, find the legal move
-     closest to the hover/drop spot and step there. Sliding pieces
-     (Rook/Bishop/Queen) and the King have a natural "closest point along
-     a line" answer; the **Knight's L-shaped, discontinuous move set makes
-     "closest legal move to an arbitrary hover point" a real pathing
-     problem, not a trivial one** — flagged explicitly as needing special
-     treatment, worth solving as a distinct, smaller follow-up rather than
-     blocking the King/sliding-piece version on it.
-     **Resolved four days later, same pass, not a separate follow-up**
-     (`1f51a1e`, `nearestLegalMove`, `index1.html`): the flagged problem
-     dissolves because nearest-legal-move is pixel-distance-to-destination
-     over the piece's actual legal-move list, not path-following — a
-     Knight's moves are just as much a flat set of candidate cells as a
-     Rook's, so no special-casing was needed. An animated "step toward it"
-     walk (as opposed to snapping straight to the nearest legal square)
-     remains unbuilt and is the only real remaining polish item here.
-   - Player can still fully override (this was already true in the
-     original framing and still holds): the drag itself IS the control,
-     there's no separate autonomous system fighting the player for input.
+1. **Auto-march — REFINED 2026-07-20, later same session.** The King does
+   **not** start marching automatically on level clear. Current behaviour
+   (drag-to-step, generalized to every piece, formation-follow as its
+   emergent consequence) is a standing design rule, below.
 2. **Terrain: build walls + holes together, not staged.** Full system in
    one pass — holes as impassable squares, boss-gated walls that drop
    when that floor's mini-boss is captured. Sequence after auto-march
@@ -326,6 +293,15 @@ files deleted in realisateur#293 (their history is in git). They are decisions, 
   capture gets a toggleable ending instead of a soft-lock — fifty-move
   draw by default; provenance and reasoning in that file's header
   comment, issue #142).
+- **Auto-march (drag-to-step):** pinned by `test/auto-march.spec.mjs`
+  (provenance and reasoning in that file's header comment) — dragging any
+  piece snaps to the nearest legal move to the drop point rather than
+  requiring a precise destination drop, the mechanism generalizes to every
+  piece including the Knight (`nearestLegalMove`, `1f51a1e`), and
+  formation-follow (naive strongest-first rank-up once Black is cleared)
+  is that same mechanism's emergent consequence, not a separate system.
+  (No test pins an animated "step toward it" walk in place of the instant
+  snap — it isn't built.)
 
 ## Difficulty theory: analytic material sufficiency (answered 2026-08-16, issue #6)
 
