@@ -1729,11 +1729,13 @@
   // ahead with no diagonal capture on offer is a dead end a pawn can never
   // walk around. Carried pawns sit at rank2 (row BOARD_ROWS - 2) by the time
   // this runs, before any scripted row is written. This is a placement-time
-  // dodge, not a general solver: it's only provably complete while a
-  // hole-bearing stage is reachable with few enough carried pawns that some
-  // shift leaves every one of them a hole-free file (true today -- "Two to
-  // take" is the only hole-bearing stage, fixed at floor 2, reachable with
-  // at most one carried pawn).
+  // dodge, not a general solver: two of the 8 cyclic shifts land a given
+  // hole on any one carried-pawn file, so each carried pawn rules out at
+  // most 2 of the 8 shifts, and a shift clearing every pawn's file is
+  // guaranteed to exist only up to 3 distinct carried-pawn files (verified
+  // for both of today's hole-bearing stages -- "Two to take" and "Building
+  // up" -- by test/terrain.spec.mjs); a 4th distinct file can force every
+  // shift to hit some hole.
   function placeScriptedStage(stage) {
     const rows = stage.rows.map(parseFenRow);
     const pawnCols = new Set();
