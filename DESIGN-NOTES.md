@@ -152,10 +152,8 @@ list nightly-batch should start executing against.
      (Archbishop/Chancellor/Amazon/Knightrider etc., which today lean on
      Unicode knight-combo glyphs). No new external service dependency in
      the same sense — an asset-creation project, not an API integration.
-     Was associated with "Chezz Classic" below; ruled out (2026-09-04,
-     #95) — **classic's visual identity is Unicode glyphs, permanently**,
-     its artifact budget (#89, #90) can't carry baked sprites, so this
-     track is narrative-only if pursued at all.
+     Narrative-only if pursued at all: classic draws Unicode glyphs,
+     pinned by `test/classic-unicode-glyphs.spec.mjs` (#95).
 
   **Superseded 2026-09-07 (#97).** `assets/pieces/` ships a full 16x16 set
   from `tools/generate-glyph-sprites.mjs`, replacing `b-pawn.png`.
