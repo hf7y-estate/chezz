@@ -253,30 +253,41 @@ test("terrain on the board doesn't blind the AI's search (tracker 2026-07-30T06:
 
 // hf7y-estate/chezz#139 (Zach 2026-10-01): every carried pawn needs a route
 // to the far rank under correct play; a route may need a capture, but a
-// pawn with no route at all under any play is the defect. "Two to take" is
-// the only stage that ever authors a TERRAIN_HOLE, and its two holes sit at
-// the board edges with no diagonal capture on offer there (that's the whole
-// point -- they're off the scripted pawns' own files) -- so a carried pawn
-// landing in a hole's file on arrival would be a dead end, not friction.
-// placeScriptedStage's existing cyclic-shift search now also requires a
-// shift that keeps every carried pawn's file hole-free. "Two to take" is a
-// fixed floor 2, and a never-died run reaches it with at most one carried
-// pawn (floor 1, "First blood", has exactly one capturable Black piece) --
-// swept over every file that one pawn could be on.
+// pawn with no route at all under any play is the defect. Swept over every
+// stage in NARRATIVE_STAGES that authors a TERRAIN_HOLE -- "Two to take" is
+// the only one today, but this no longer hardcodes that name, so a future
+// hole-bearing stage is covered automatically instead of silently shipping
+// untested (the gap PR #173 left: that fix's own regression only checked
+// "Two to take" by label). placeScriptedStage's cyclic-shift search already
+// requires a shift that keeps every carried pawn's file hole-free; this
+// swept over every file one pawn could be on for each matching stage.
+//
+// Caveat this inherits from #173, now spelled out instead of implicit: the
+// one-pawn sweep is only a complete check for a stage reachable with at
+// most one carried pawn, true today only because the sole hole-bearing
+// stage ("Two to take") is fixed at floor 2, right after "First blood"
+// (floor 1, exactly one capturable Black piece). A future hole-bearing
+// stage reachable later in the campaign, where a run could carry over two
+// or more pawns at once, needs a joint multi-pawn check this test does not
+// perform -- a pass green here is not a green light for that case.
 test("a carried pawn is never left facing a hole with no way around it", async ({ page }) => {
   const stranded = await page.evaluate(() => {
     const bad = [];
-    const stageIdx = NARRATIVE_STAGES.findIndex(s => s.label === "Two to take");
-    for (let col = 0; col < BOARD_COLS; col++) {
-      state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
-      state.board[8][4] = "K";
-      state.board[7][col] = "P"; // the one pawn a fresh run could carry this far
-      state.floor = stageIdx + 1;
-      state.spawned = false;
-      state.lastSpawnBudget = 0;
-      spawnBlackArmy();
-      for (let y = 1; y <= 6; y++) {
-        if (state.board[y][col] === "X") bad.push({ col, y });
+    const holeStageIdxs = NARRATIVE_STAGES
+      .map((stage, i) => (stage.rows.some(r => r.includes("X")) ? i : -1))
+      .filter(i => i !== -1);
+    for (const stageIdx of holeStageIdxs) {
+      for (let col = 0; col < BOARD_COLS; col++) {
+        state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
+        state.board[8][4] = "K";
+        state.board[7][col] = "P"; // the one pawn a fresh run could carry this far
+        state.floor = stageIdx + 1;
+        state.spawned = false;
+        state.lastSpawnBudget = 0;
+        spawnBlackArmy();
+        for (let y = 1; y <= 6; y++) {
+          if (state.board[y][col] === "X") bad.push({ stage: NARRATIVE_STAGES[stageIdx].label, col, y });
+        }
       }
     }
     return bad;
