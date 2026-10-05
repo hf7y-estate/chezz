@@ -204,44 +204,14 @@ in hf7y/chezz#66:**
 
 Both questions are closed out on #66 as of this write-up.
 
-## Size policy — decided 2026-07-25 (human reply in that day's report)
+## Size policy
 
-The index1.html byte limit is **abandoned for chezz narrative** (the
-build on `main`, hosted publicly). The 2026-07-24 "only ~2.5KB of
-headroom, urgent" framing is retired: `scripts/check-size.mjs` now
-prints the size on every run (creep stays visible) but never fails the
-narrative build, and size must never again be the reason a feature is
-pre-deferred — do the work, run the checks after, and if a real limit is
-ever exceeded, be noisy about it (file an issue for Zach with
-`scheduler ask chezz "..."` to raise the threshold before continuing)
-rather than quietly deferring or trimming.
-
-The limit stays **enforced on classic** — the elegance/efficiency track:
-future dev passes there work to make the project *simpler*, with a
-stated long-term aspiration of fitting on a Game Boy classic cartridge.
-Caps on classic remain 50,000 soft / 100,000 hard.
-
-Revised 2026-09-04 (#90): the cap is on the **published artifact**, not
-`chezz-classic`'s own commented `index1.html`. `bin/build-site.sh` and
-`scripts/check-size.mjs` both strip that source (`scripts/strip-html.mjs`)
-before measuring or publishing it.
-
-Revised again 2026-09-05 (#89): the artifact is now **built**, not just
-stripped. `scripts/build-classic-artifact.mjs` splices narrative's
-current pure-computation engine functions (move generation, legality,
-search/eval, spawn) into classic's own shell (its HTML/CSS, the Apps
-Script leaderboard, promotion UI, drag/click handling — everything that
-isn't engine) — the one piece of #89's "one engine source" this repo can
-land without also porting narrative-only features like terrain and
-drag-step (real, separate follow-up work, not implied by this). Both
-`bin/build-site.sh` and `scripts/check-size.mjs` run this build before
-measuring or publishing, so a future engine fix on `main` reaches
-classic's next build with no manual port — the artifact lands at 41,010
-bytes, no branch-name gate needed.
-
-This supersedes: the 2026-07-14 "stop and revisit rather than cut
-comments" call (narrative side — moot now that nothing needs cutting),
-and closes the 2026-07-24 size question (answered 2026-07-25).
+Pinned by `test/size-policy.spec.mjs` (`scripts/size-policy.mjs`): the
+narrative build is never failed for its size, and classic's built,
+stripped artifact warns past 50,000 bytes and fails past 100,000. Over
+the hard cap, file an issue to raise it rather than trimming to fit.
+Classic's long-term aspiration is to get *simpler*, toward fitting on a
+Game Boy cartridge. How the artifact is built: hf7y/chezz#89, #90.
 
 ## Stability milestone
 
