@@ -82,23 +82,6 @@ needs its own scoping pass before it's implementation-ready. Treat this
 section as a seed list a future vision session picks from, not a to-do
 list nightly-batch should start executing against.
 
-- **Neutral evasive flavor piece + knight-upgrade-by-capture chain.** A
-  neutral (half-white/half-black) horse-shaped piece that always tries to
-  evade capture, appearing as flavor content on the pawn-fodder/terrain
-  levels. Capturing it grants the capturing piece a permanent "+knight"
-  upgrade — merges knight movement onto whatever piece took it:
-  Bishop→Archbishop, Rook→Chancellor, Queen→Amazon. A piece that's already
-  knight-combined (i.e. would become knight+knight) becomes a
-  **Knightrider** instead — a fairy piece that repeats knight-move steps
-  in a straight line — with a proposed graphic treatment of an
-  upside-down knight glyph to visually distinguish it. Needs: capture
-  logic for a non-aligned/neutral third side, an evasion AI for the
-  neutral piece, upgrade-application logic per piece type, and a
-  Knightrider move-generator (doesn't exist in the current fairy-piece
-  set — Archbishop/Chancellor/Amazon are simple move-set unions, a
-  knightrider's repeated-knight-step movement is a different shape of
-  rule entirely). **Narrative-only** (ruled per #95): #89's core is what
-  classic can afford, so this sits above it, in narrative.
 - **Graphics pipeline — SIGN-OFF GRANTED 2026-07-27, track 1 built.** Zach
   answered the standing new-external-dependency gate in scheduler
   the then-current file channel: *"Yes, pursue the gemini path, safe bounded
@@ -262,6 +245,14 @@ files deleted in realisateur#293 (their history is in git). They are decisions, 
   is that same mechanism's emergent consequence, not a separate system.
   (No test pins an animated "step toward it" walk in place of the instant
   snap — it isn't built.)
+- **Neutral piece + knight-upgrade-by-capture chain:** specced #98,
+  shipped #111, pinned by `test/neutral-piece.spec.mjs` (capture,
+  reactive evasion, the per-piece-type upgrade, no upgrade for a
+  King/Knight/Pawn capturer) and `test/knightrider.spec.mjs` (an
+  already knight-combined capturer produces a Knightrider instead of
+  double-stacking). **Narrative-only** (ruled per #95): classic's build
+  excises the spawn (`scripts/build-classic-artifact.mjs`'s
+  `transformSpecialCases`).
 
 ## Difficulty theory: analytic material sufficiency (answered 2026-08-16, issue #6)
 
