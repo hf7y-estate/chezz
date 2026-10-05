@@ -260,33 +260,52 @@ test("terrain on the board doesn't blind the AI's search (tracker 2026-07-30T06:
 // untested (the gap PR #173 left: that fix's own regression only checked
 // "Two to take" by label). placeScriptedStage's cyclic-shift search already
 // requires a shift that keeps every carried pawn's file hole-free; this
-// swept over every file one pawn could be on for each matching stage.
+// sweeps every combination of carried-pawn files, for every matching stage.
 //
-// Caveat this inherits from #173, now spelled out instead of implicit: the
-// one-pawn sweep is only a complete check for a stage reachable with at
-// most one carried pawn, true today only because the sole hole-bearing
-// stage ("Two to take") is fixed at floor 2, right after "First blood"
-// (floor 1, exactly one capturable Black piece). A future hole-bearing
-// stage reachable later in the campaign, where a run could carry over two
-// or more pawns at once, needs a joint multi-pawn check this test does not
-// perform -- a pass green here is not a green light for that case.
+// The bound this checks, not just a single-pawn sweep: each hole rules out
+// exactly 2 of the 8 cyclic shifts for a pawn on a given file (the two
+// shifts that land that hole on that file), so each carried pawn forbids at
+// most 2 of the 8 shifts. Up to 3 distinct carried-pawn files, that's at
+// most 6 forbidden shifts, leaving at least one safe shift no matter which
+// files they're on -- the combinatorics don't depend on which stage or
+// which files, only on how many of today's 2 holes per stage there are. A
+// 4th distinct file can force every shift to hit some hole (verified by
+// hand, not asserted here since no stage is reachable with that many
+// carried pawns today). A pass here is not a green light for that case.
 test("a carried pawn is never left facing a hole with no way around it", async ({ page }) => {
   const stranded = await page.evaluate(() => {
+    function combinations(pool, k) {
+      if (k === 0) return [[]];
+      if (pool.length < k) return [];
+      const [head, ...rest] = pool;
+      return [
+        ...combinations(rest, k - 1).map(c => [head, ...c]),
+        ...combinations(rest, k),
+      ];
+    }
+
     const bad = [];
     const holeStageIdxs = NARRATIVE_STAGES
       .map((stage, i) => (stage.rows.some(r => r.includes("X")) ? i : -1))
       .filter(i => i !== -1);
+    const cols = Array.from({ length: BOARD_COLS }, (_, x) => x);
     for (const stageIdx of holeStageIdxs) {
-      for (let col = 0; col < BOARD_COLS; col++) {
-        state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
-        state.board[8][4] = "K";
-        state.board[7][col] = "P"; // the one pawn a fresh run could carry this far
-        state.floor = stageIdx + 1;
-        state.spawned = false;
-        state.lastSpawnBudget = 0;
-        spawnBlackArmy();
-        for (let y = 1; y <= 6; y++) {
-          if (state.board[y][col] === "X") bad.push({ stage: NARRATIVE_STAGES[stageIdx].label, col, y });
+      for (const pawnCount of [1, 2, 3]) {
+        for (const pawnCols of combinations(cols, pawnCount)) {
+          state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
+          state.board[8][4] = "K";
+          pawnCols.forEach(col => { state.board[7][col] = "P"; });
+          state.floor = stageIdx + 1;
+          state.spawned = false;
+          state.lastSpawnBudget = 0;
+          spawnBlackArmy();
+          for (const col of pawnCols) {
+            for (let y = 1; y <= 6; y++) {
+              if (state.board[y][col] === "X") {
+                bad.push({ stage: NARRATIVE_STAGES[stageIdx].label, pawnCols, col, y });
+              }
+            }
+          }
         }
       }
     }
