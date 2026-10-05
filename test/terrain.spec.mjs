@@ -250,3 +250,37 @@ test("terrain on the board doesn't blind the AI's search (tracker 2026-07-30T06:
   expect(Number.isFinite(mv.chosen.score)).toBe(true); // not the NaN-collapsed -Infinity sentinel
   expect(mv.cBishopHangs).toBe(false); // must not leave the OTHER bishop (c42) hanging either
 });
+
+// hf7y-estate/chezz#139 (Zach 2026-10-01): every carried pawn needs a route
+// to the far rank under correct play; a route may need a capture, but a
+// pawn with no route at all under any play is the defect. "Two to take" is
+// the only stage that ever authors a TERRAIN_HOLE, and its two holes sit at
+// the board edges with no diagonal capture on offer there (that's the whole
+// point -- they're off the scripted pawns' own files) -- so a carried pawn
+// landing in a hole's file on arrival would be a dead end, not friction.
+// placeScriptedStage's existing cyclic-shift search now also requires a
+// shift that keeps every carried pawn's file hole-free. "Two to take" is a
+// fixed floor 2, and a never-died run reaches it with at most one carried
+// pawn (floor 1, "First blood", has exactly one capturable Black piece) --
+// swept over every file that one pawn could be on.
+test("a carried pawn is never left facing a hole with no way around it", async ({ page }) => {
+  const stranded = await page.evaluate(() => {
+    const bad = [];
+    const stageIdx = NARRATIVE_STAGES.findIndex(s => s.label === "Two to take");
+    for (let col = 0; col < BOARD_COLS; col++) {
+      state.board = Array.from({ length: 9 }, () => Array(8).fill(""));
+      state.board[8][4] = "K";
+      state.board[7][col] = "P"; // the one pawn a fresh run could carry this far
+      state.floor = stageIdx + 1;
+      state.spawned = false;
+      state.lastSpawnBudget = 0;
+      spawnBlackArmy();
+      for (let y = 1; y <= 6; y++) {
+        if (state.board[y][col] === "X") bad.push({ col, y });
+      }
+    }
+    return bad;
+  });
+
+  expect(stranded).toEqual([]);
+});

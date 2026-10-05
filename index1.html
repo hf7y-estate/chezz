@@ -1721,8 +1721,23 @@
   // the stage's shape and relative spacing exactly intact while moving it
   // off whatever line White's survivors threaten; tries shift 0 (the
   // authored layout, unchanged) first, and only rotates if that's unsafe.
+  //
+  // Also requires (hf7y-estate/chezz#139, Zach 2026-10-01: every carried
+  // pawn needs a route to the far rank, a route may need a capture, but a
+  // pawn with no route at all under any play is the defect) that no
+  // TERRAIN_HOLE lands in the same file as a carried pawn -- a hole directly
+  // ahead with no diagonal capture on offer is a dead end a pawn can never
+  // walk around. Carried pawns sit at rank2 (row BOARD_ROWS - 2) by the time
+  // this runs, before any scripted row is written. This is a placement-time
+  // dodge, not a general solver: it's only provably complete while a
+  // hole-bearing stage is reachable with few enough carried pawns that some
+  // shift leaves every one of them a hole-free file (true today -- "Two to
+  // take" is the only hole-bearing stage, fixed at floor 2, reachable with
+  // at most one carried pawn).
   function placeScriptedStage(stage) {
     const rows = stage.rows.map(parseFenRow);
+    const pawnCols = new Set();
+    state.board[BOARD_ROWS - 2].forEach((c, x) => { if (c === "P") pawnCols.add(x); });
     let fallback = null;
     for (let shift = 0; shift < BOARD_COLS; shift++) {
       const shifted = rows.map(row => {
@@ -1733,7 +1748,8 @@
       shifted.forEach((row, i) => { state.board[i + 1] = row; });
       if (!fallback) fallback = shifted;
       const allSafe = shifted.every((row, i) => row.every((c, x) => !c || c === "p" || isTerrain(c) || isSafeSquare(x, i + 1)));
-      if (allSafe) { fallback = shifted; break; }
+      const holesOpen = shifted.every(row => row.every((c, x) => c !== TERRAIN_HOLE || !pawnCols.has(x)));
+      if (allSafe && holesOpen) { fallback = shifted; break; }
     }
     fallback.forEach((row, i) => { state.board[i + 1] = row; });
     if (stage.wallRow != null) state.board[stage.wallRow].fill(TERRAIN_WALL);
