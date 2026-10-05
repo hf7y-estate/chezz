@@ -20,10 +20,9 @@ pieces forward floor to floor. `netlify/functions/report.js` backs a live
 player-feedback tracker (bug + feature reports, fed by an in-game chat
 box) as GitHub Issues on this repo, labelled `player-report` — it
 replaced the Google Apps Script tracker (`leaderboard/Code.gs`, retired
-#83) whose deployment had drifted out of sync with git for weeks (#82);
-the server-side daily/all-time leaderboard it used to also back was
-dropped (issue #15, "Option C", confirmed by Zach) in favor of a
-purely-local "Your best" in the page itself. Live at
+#83) whose deployment had drifted out of sync with git for weeks (#82).
+The only leaderboard is a purely-local "Your best", pinned by
+`test/local-best-only.spec.mjs` (#15). Live at
 https://chezz.hf7y.com/ (Netlify, #83), the only host. GitHub Pages and
 its hf7y.com/chezz redirect (#94) were dropped after the org transfer
 unset the Pages custom domain (#145). Zach, 2026-10-01, asked whether to
