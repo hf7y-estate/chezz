@@ -69,27 +69,8 @@ needs its own scoping pass before it's implementation-ready. Treat this
 section as a seed list a future vision session picks from, not a to-do
 list nightly-batch should start executing against.
 
-- **Graphics pipeline — SIGN-OFF GRANTED 2026-07-27, track 1 built.** Zach
-  answered the standing new-external-dependency gate in scheduler
-  the then-current file channel: *"Yes, pursue the gemini path, safe bounded
-  account balance exists for testing precisely this. Lift creds from
-  vkv-inventory if possible pending the creation of chezz specific ones."*
-  Track 1 is now implemented (see below for what was built and the one
-  thing still missing); track 2 (the fairy-piece font) is untouched and
-  still has no gate on it.
-
-  **What shipped 2026-07-27 (nightly):**
-  - `tools/generate-pieces.mjs` — prompts `gemini-2.5-flash-image` for all
-    18 pieces (9 types × 2 sides) over plain `fetch`, no SDK.
-  - `tools/sprite-postprocess.js` — chroma-keys the magenta field out,
-    crops to content, fits-and-centers into 32×32, and snaps every pixel to
-    the game's own monochrome ramp. Runs on a Playwright canvas.
-  - `tools/wire-pieces.mjs` — bakes `assets/pieces/*.png` into
-    `index1.html`'s `PIECE_SPRITES` as base64 data URIs.
-  - `index1.html` — `pieceGlyphHtml` renders a sprite when one exists and
-    the Unicode glyph when one doesn't, **per piece**.
-
-  **Three decisions worth not re-litigating**, each pinned by a test:
+- **Graphics pipeline — shipped.** Three decisions worth not
+  re-litigating, each pinned by a test:
   - *Zero new dependencies*, and *generation is a deliberate manual step*:
     `test/sprite-pipeline-decisions.spec.mjs`.
   - *Monochrome is enforced by the pipeline, not by the prompt*:
@@ -98,34 +79,8 @@ list nightly-batch should start executing against.
   - *Sprites are baked in as data URIs*: `test/piece-sprites.spec.mjs`
     ("every piece in PIECE_SPRITES is a real sprite").
 
-  **The partial sprite set is the designed, tested state, not a blocked
-  pipeline** (corrected per #95; standing answer Zach, in #32: asked to
-  lift a key from `vkv-inventory` or provision a chezz one,
-  he chose **neither** — no `GEMINI_API_KEY` needed, one shipped sprite
-  (`assets/pieces/b-pawn.png`) is the design, `pieceGlyphHtml` falls back
-  to Unicode for the rest).
-
-  The original two-track note, with one correction below (track 2's
-  association with Classic did not survive #89/#95):
-  1. **Autonomous AI-generated sprites**, extracting and adapting the
-     pixel-art Gemini API workflow already built in the `vkv-inventory`
-     project, made autonomous for chezz. **This is a NEW external service
-     dependency** (an image-generation API call) — the standing gate
-     already reserves this for explicit user sign-off, no autopilot
-     exception (this is the same gate the tracker's existing
-     `2026-07-17T07:25:16.315Z` sprite-replacement report is deferred
-     behind). Cross-project too: would need coordinating with whatever
-     `vkv-inventory`'s workflow actually looks like today, not something
-     to build blind from a one-line description.
-  2. **A custom font file with real typography for the fairy pieces**
-     (Archbishop/Chancellor/Amazon/Knightrider etc., which today lean on
-     Unicode knight-combo glyphs). No new external service dependency in
-     the same sense — an asset-creation project, not an API integration.
-     Narrative-only if pursued at all: classic draws Unicode glyphs,
-     pinned by `test/classic-unicode-glyphs.spec.mjs` (#95).
-
-  **Superseded 2026-09-07 (#97).** `assets/pieces/` ships a full 16x16 set
-  from `tools/generate-glyph-sprites.mjs`, replacing `b-pawn.png`.
+  Full history (sign-off, what shipped, the partial-set correction, the
+  superseding 16x16 set): hf7y/chezz#32, #95, #97.
 
 ## "Chezz Classic" — all three questions resolved; work is #89
 
