@@ -254,25 +254,11 @@ files deleted in realisateur#293 (their history is in git). They are decisions, 
   excises the spawn (`scripts/build-classic-artifact.mjs`'s
   `transformSpecialCases`).
 
-## Difficulty theory: analytic material sufficiency (answered 2026-08-16, issue #6)
+## Difficulty theory: analytic material sufficiency
 
-`research/balance/` (the scholarship lane, [[project-chezz-research]] if
-that memory exists) is confirmed as the right home for the open "what
-White material is actually needed to beat a given Black composition"
-question — no separate theory/math branch. The method is constrained,
-too: **analytic proofs, not playtesting or statistics.** AGENT
-playtesting (an unattended run burning turns self-playing floors to
-gather empirical data) is explicitly NOT in scope for this question, even
-though it's a tool nightly runs otherwise have available — this is
-theoretical work, not experimental. Full framing in
-`research/balance/README.md`'s "Open, not yet studied" section.
-
-Zach's answer also asked that an issue be filed with a project called
-"bibliothecaire" to request research help. That repo isn't reachable from
-this run's environment — no `hf7y/bibliothecaire` (or similarly-named)
-repo exists under the `hf7y` GitHub account, and neither the `scheduler`
-nor `discipline` CLIs are on PATH here to resolve an internal project
-alias to a real remote (see the infra-gaps note this same run filed,
-issue #9's pattern repeating in a plain runner environment this time, not
-just on `monkey`). Filed as a `question` issue on `hf7y/chezz` instead of
-guessing at a URL.
+Resolved, both closed: hf7y-estate/chezz#6 (`research/balance/` is the
+analytic-proofs home for "what White material beats a given Black
+composition" — no playtesting/statistics for this question; full framing
+in `research/balance/README.md`'s "Open, not yet studied" section) and
+hf7y-estate/chezz#37 (the bibliothecaire-access gap that answer also
+raised).
