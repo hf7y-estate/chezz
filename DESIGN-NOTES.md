@@ -52,11 +52,8 @@ or re-ask:
      block anything) are both superseded by hf7y-estate/chezz#142's
      2026-10-01 fix and now live only as history on that issue. Current
      behaviour is a standing design rule, below.
-3. **Material sufficiency: strengthen the tuning proxy.** Pure
-   engineering (deeper search, real king-safety/tactical eval instead of
-   material-only), no playtesting asked of the user. This can run as
-   backup/parallel work — doesn't block or get blocked by auto-march/
-   terrain.
+3. **Material sufficiency: strengthen the tuning proxy.** Resolved —
+   see "Difficulty theory" below (#6, #37).
 4. **King→Queen: worth exploring as its own project**, explicitly not
    bundled with the archbishop/bishop-pair numeric tweaks (those stay
    deferred, untouched — no new data justifies another guess at either).
