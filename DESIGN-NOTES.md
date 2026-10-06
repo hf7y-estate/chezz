@@ -37,21 +37,11 @@ Four vision questions, asked directly, answered directly — recording the
 decision and reasoning so a later autonomous run doesn't have to re-derive
 or re-ask:
 
-1. **Auto-march — REFINED 2026-07-20, later same session.** The King does
-   **not** start marching automatically on level clear. Current behaviour
-   (drag-to-step, generalized to every piece, formation-follow as its
-   emergent consequence) is a standing design rule, below.
-2. **Terrain: build walls + holes together, not staged.** Full system in
-   one pass — holes as impassable squares, boss-gated walls that drop
-   when that floor's mini-boss is captured. Sequence after auto-march
-   (shares the post-combat/floor-progression surface, wants that flow
-   stable first) — not explicitly bundled into the same implementation
-   pass, just ordered second.
-   - The 2026-07-20 "narrow gate, only the King fits through" framing and
-     its 2026-09-23 correction (hf7y/chezz#120 — the gate didn't actually
-     block anything) are both superseded by hf7y-estate/chezz#142's
-     2026-10-01 fix and now live only as history on that issue. Current
-     behaviour is a standing design rule, below.
+1. **Auto-march.** Resolved — see "Standing design rules" below
+   (`test/auto-march.spec.mjs`).
+2. **Terrain (walls + holes, boss gates).** Resolved — see "Standing
+   design rules" below (`test/terrain.spec.mjs`, `test/lone-king.spec.mjs`);
+   history on hf7y/chezz#120, hf7y-estate/chezz#142.
 3. **Material sufficiency: strengthen the tuning proxy.** Resolved —
    see "Difficulty theory" below (#6, #37).
 4. **King→Queen: worth exploring as its own project**, explicitly not
