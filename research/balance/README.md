@@ -79,6 +79,7 @@ Each entry is one file, `YYYY-MM-DD-<slug>.md`:
 - [2026-07-29 — spawned pawns must never be free material](2026-07-29-pawn-spawn-free-material.md)
 - [2026-09-23 — a lone King can never force "The Knight" boss's capture; pawn count isn't the lever](#2026-09-23--a-lone-king-can-never-force-the-knight-bosss-capture--pawn-count-isnt-the-lever)
   (recorded below, not a separate file -- see that section's own note on why)
+- [2026-10-08 — a lone King cannot force a safe crossing against "The Rook"'s lone Rook](2026-10-08-lone-rook-evasion-analytic.md)
 
 ### Recorded in the issue/PR, not a separate file
 
