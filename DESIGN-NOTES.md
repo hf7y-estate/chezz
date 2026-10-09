@@ -44,22 +44,12 @@ or re-ask:
    history on hf7y/chezz#120, hf7y-estate/chezz#142.
 3. **Material sufficiency: strengthen the tuning proxy.** Resolved —
    see "Difficulty theory" below (#6, #37).
-4. **King→Queen: worth exploring as its own project**, explicitly not
-   bundled with the archbishop/bishop-pair numeric tweaks (those stay
-   deferred, untouched — no new data justifies another guess at either).
-   Given this changes the core tension of the game (the King's fragility
-   *is* the game today), this needs a **design spec written and reviewed
-   before any implementation starts** — same irreversibility instinct
-   the standing redesign-defer criterion already applies to
-   core-rule-touching work, now explicitly greenlit for exploration rather
-   than indefinite deferral. Nightly-batch's job here is to draft the
-   spec into this file (what changes, what stays, how it interacts with
-   the King's exit-row win condition, spawn/threat balance, etc.) and
-   surface it as a `question`-labelled issue for a checkpoint — not to start writing
-   game code against a redesign this size without one. **That spec was
-   drafted 2026-07-24 and is superseded on its central question** (the answer
-   is royal progression, not a 1:1 replacement); it was deleted here rather
-   than left as a trap. Live status and the answer: hf7y/chezz#32.
+4. **King→Queen (royal progression): answered, not built.** The King
+   absorbing movement from a captured neutral piece, same mechanism
+   #98/#111 built for every other piece but explicitly excluded the King
+   from. Still needs a design spec reviewed before implementation starts
+   — core-rule-touching, the King's fragility *is* the game today. Status
+   and full history: hf7y/chezz#32.
 
 ## Deep feature ideas (recorded 2026-07-20, NOT scoped for implementation)
 
