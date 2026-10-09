@@ -1692,7 +1692,11 @@
     // while occasionally checking, with nothing forcing a resolution.
     // Giving more floor-transitions (each is one more chance for a
     // surviving piece to backfill a pawn -- see newFloor) before the fight
-    // is the fix being tried first, not yet reverified.
+    // is the fix being tried first -- reverified analytically 2026-10-08
+    // (research/balance/2026-10-08-lone-rook-evasion-analytic.md: a lone
+    // King has zero forced wins to the exit from any home square against
+    // this Rook, so arriving here without backup really is a dead end, not
+    // a myth), hf7y-estate/chezz#140.
     { label: "More pawns", rows: ["8", "8", "8", "8", "2p2p2", "8"] },
     { label: "The Rook", rows: ["8", "8", "8", "3r4", "8", "8"] },
     { label: "The Queen", rows: ["8", "8", "8", "3q4", "8", "8"] },
