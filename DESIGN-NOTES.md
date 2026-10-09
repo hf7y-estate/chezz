@@ -82,49 +82,18 @@ list nightly-batch should start executing against.
   Full history (sign-off, what shipped, the partial-set correction, the
   superseding 16x16 set): hf7y/chezz#32, #95, #97.
 
-## "Chezz Classic" — all three questions resolved; work is #89
+## "Chezz Classic" — resolved; work is #89
 
-Raised 2026-07-20: the user wants an older version of chezz — at the time,
-live at `hf7y.com/chezz.html`, which redirected to an OCF Berkeley-hosted
-copy (note: **not** `hf7y.github.io/chezz/`, the current live site this
-repo's automation deploys) — developed as **"its own production
-stream."** The user confirmed directly: the code lived on `main`, and
-narrative-campaign work eventually overwrote it there (file content, not
-git history — the commits themselves were never destroyed).
-
-**Resolved by git archaeology, not guesswork**: `readable-html` (an
-already-existing branch, still pushed to `origin`) is the **exact
-merge-base** between itself and current `main` — `git merge-base
-readable-html main` returns `readable-html`'s own tip (`6815336`,
-2026-07-16, "Merge simplify-and-polish: dedup pass, mobile touch-drag
-fix, promotion dialog fix"), and `git log --oneline readable-html..main`
-starts with `c13e228 Add a scripted narrative campaign` as the very first
-commit past it. That's a clean, unambiguous boundary — no divergent
-history to reconcile, no guessing between candidate branches. **Action
-taken**: created and pushed a clearly-named `chezz-classic` branch
-pointing at that same commit (`git branch chezz-classic readable-html`),
-so it's a discoverable, purpose-named reference going forward instead of
-an ambiguous old branch name — `readable-html` itself was left alone
-(unchanged), `chezz-classic` is a second ref to the same commit.
-
-**Questions 2 and 3 answered by Zach, 2026-09-04 (realisateur `/ideate`),
-in hf7y/chezz#66:**
-
-2. `hf7y.com`'s topology has since changed: Zach repointed it away from
-   the OCF-Berkeley redirect, and it is now his GitHub Pages root
-   (confirmed 2026-09-04: `dig +short hf7y.com` resolves to GitHub
-   Pages' IPs, `hf7y/hf7y.github.io`'s Pages API reports `status:
-   "built"`, `cname: "hf7y.com"`, and `https://hf7y.com/chezz/` answers
-   200 — re-verified independently 2026-09-05, still 200). Publishing
-   there unattended is a solved problem now; the earlier "sandbox cannot
-   reach `hf7y.com`" note above was a stale artifact of the old topology,
-   not a standing restriction.
-3. Classic runs in the **same** stream as chezz narrative, not a second
-   registered scheduler project — one repo, one backlog, one intake.
-   That depends on the in-game report intake existing (#83) and on
-   classic and narrative sharing one engine (#89, see below).
-
-Both questions are closed out on #66 as of this write-up.
+`chezz-classic` is the pre-narrative codebase, originally pointed at
+`readable-html`'s tip by git archaeology (`git merge-base readable-html
+main` == `readable-html`'s own tip `6815336`; `c13e228` "Add a scripted
+narrative campaign" is the first commit past it on `main`). Since then it
+has taken ported commits bringing it toward narrative's engine (#89's
+shared-engine work), so `git merge-base chezz-classic main` now resolves
+to `readable-html`'s tip rather than `chezz-classic`'s own current tip —
+expected drift from ongoing porting, not a sign the branch was lost or
+reset. Full history and the resolved hosting/scheduling questions:
+hf7y/chezz#66, #89.
 
 ## Size policy
 
