@@ -7,7 +7,10 @@
 //
 // Deliberately NOT part of `npm run check`: like check-answer-channel.mjs,
 // this hits live network, and a transient blip must not block the commit
-// that would fix it. Runs from test.yml's daily schedule instead.
+// that would fix it. Used to run from test.yml's daily schedule; that
+// workflow is gone now that Actions is disabled org-wide for this repo
+// (hf7y-estate/chezz#191), so nothing triggers this automatically until
+// something else is wired up to invoke it on a schedule.
 import { execFileSync } from "node:child_process";
 import { stamped } from "./answered-issues.mjs";
 
@@ -96,8 +99,9 @@ function fileBlocker(failures) {
   const body = [
     "NO-DECISION: automated live-route check found a route not serving; no ruling needed, just a fix.",
     "",
-    "Automated check (scripts/check-live-deploy.mjs, run from test.yml's daily",
-    "schedule) found a live route that isn't serving:",
+    "Automated check (scripts/check-live-deploy.mjs, run manually -- no",
+    "scheduled trigger exists since test.yml left this repo) found a live",
+    "route that isn't serving:",
     "",
     ...failures.map((f) => `- ${f.name} (${f.url}): ${f.detail}`),
     "",

@@ -27,7 +27,7 @@ test("the sprite pipeline rides on what was already installed: no new dependency
   }
 });
 
-test("the paid generator is reachable only by its own npm script, never from a check, hook or workflow", () => {
+test("the paid generator is reachable only by its own npm script, never from a check or hook", () => {
   const callers = Object.entries(pkg.scripts)
     .filter(([, cmd]) => cmd.includes("generate-pieces"))
     .map(([name]) => name);
@@ -38,7 +38,7 @@ test("the paid generator is reachable only by its own npm script, never from a c
     expect(cmd, `npm run ${name}`).not.toContain("pieces:generate");
   }
 
-  const automation = [".githooks", ".github/workflows", "bin", "scripts"];
+  const automation = [".githooks", "bin", "scripts"];
   let scanned = 0;
   for (const dir of automation) {
     for (const file of fs.readdirSync(path.join(root, dir))) {
